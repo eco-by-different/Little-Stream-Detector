@@ -23,6 +23,10 @@ LSD does not use FFmpeg, FFprobe, MediaInfo, or any other external multimedia to
 
 Video files are only read and analyzed. They are never decoded, modified, or transcoded.
 
+## Screenshot
+
+![lsd-gui.png](lsd-gui.png)
+
 ## Usage
 
 1. Run `LittleStreamDetector.exe`.
