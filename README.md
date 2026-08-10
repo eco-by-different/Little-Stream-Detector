@@ -39,8 +39,11 @@ No installation or administrator privileges are required.
 ## Running the PowerShell source
 
 If `LSD.ps1` was downloaded from the Internet, Windows may block it.
-Right-click `LSD.ps1`, select **Properties**, enable **Unblock**, and click
-**Apply**. The script can then be started using **Run with PowerShell**.
+
+Right-click `LSD.ps1`, select **Properties**, enable **Unblock**, and click **Apply**.
+
+The script can then be started using **Run with PowerShell**.
+
 This step is not required for the compiled executable.
 
 ## System Requirements
