@@ -50,3 +50,11 @@ This step is not required for the compiled executable.
 
 - Windows 10 or Windows 11
 - 64-bit Windows recommended
+
+## License
+
+Little Stream Detector is licensed under the GNU General Public License v3.0.
+
+You may use, study, modify, and redistribute the software under the terms of the GPL-3.0 license. Distributed modified versions must provide the corresponding source code and remain licensed under GPL-3.0.
+
+See the LICENSE file for the complete license terms.
