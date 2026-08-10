@@ -40,7 +40,7 @@ No installation or administrator privileges are required.
 
 If `LSD.ps1` was downloaded from the Internet, Windows may block it.
 
-Right-click `LSD.ps1`, select **Properties**, enable **Unblock**, and click **Apply**. The script can then be started using **Run with PowerShell**.
+Right-click `LSD.ps1`, select **Properties**, check **Unblock**, and click **Apply**. The script can then be started using **Run with PowerShell**.
 
 Alternatively, unblock the downloaded ZIP file before extracting it. This prevents the extracted files from inheriting the Internet security marker.
 
