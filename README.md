@@ -1,5 +1,5 @@
-![Repo size](https://img.shields.io/github/repo-size/eco-by-different/smarttar-star)
-![Last commit](https://img.shields.io/github/last-commit/eco-by-different/smarttar-star)
+![Repo size](https://img.shields.io/github/repo-size/eco-by-different/Little-Stream-Detector)
+![Last commit](https://img.shields.io/github/last-commit/eco-by-different/Little-Stream-Detector)
 
 # Little Stream Detector (LSD) 1.0
 
@@ -29,12 +29,19 @@ Video files are only read and analyzed. They are never decoded, modified, or tra
 
 ## Usage
 
-1. Run `LittleStreamDetector.exe`.
+1. Run `LSD.exe`.
 2. Drag a video file into the application window, or click **Open video**.
 3. Wait for the native analysis to complete.
 4. Use **Copy** to copy the generated report.
 
 No installation or administrator privileges are required.
+
+## Running the PowerShell source
+
+If `LSD.ps1` was downloaded from the Internet, Windows may block it.
+Right-click `LSD.ps1`, select **Properties**, enable **Unblock**, and click
+**Apply**. The script can then be started using **Run with PowerShell**.
+This step is not required for the compiled executable.
 
 ## System Requirements
 
