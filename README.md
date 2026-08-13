@@ -23,6 +23,16 @@ LSD does not use FFmpeg, FFprobe, MediaInfo, or any other external multimedia to
 
 Video files are only read and analyzed. They are never decoded, modified, or transcoded.
 
+---
+
+# Antivirus Notice (False Positives)
+The .exe binary is generated using PS2EXE, which some sensitive antivirus engines, including Windows Defender or machine-learning based scanners, may flag as a false positive.
+
+The underlying PowerShell script is clean.
+If your system blocks the .exe, you can safely run the raw SmartTAR.ps1 script instead.
+
+---
+
 ## Screenshot
 
 ![lsd-gui.png](lsd-gui.png)
