@@ -67,7 +67,7 @@ public static class NativeMediaProbe {
  static void ParseHevc(byte[] c,NativeTrack t){
   if(c==null||c.Length<23||c[0]!=1)return;t.HevcConfig=true;t.HevcProfile=c[1]&31;t.HevcTier=(c[1]&0x20)!=0;t.HevcLevel=c[12];t.Profile=HevcProfileName(t.HevcProfile);t.Level=t.HevcLevel/30.0;t.Chroma=(c[16]&3)==0?"YUV 4:0:0":(c[16]&3)==1?"YUV 4:2:0":(c[16]&3)==2?"YUV 4:2:2":"YUV 4:4:4";t.BitDepth=8+(c[17]&7);t.NalLengthSize=(c[21]&3)+1;t.HevcTemporalLayers=(c[21]>>3)&7;
   int p=23;int arrays=c[22];for(int a=0;a<arrays&&p+3<=c.Length;a++){int type=c[p]&63;int num=(c[p+1]<<8)|c[p+2];p+=3;for(int i=0;i<num&&p+2<=c.Length;i++){int n=(c[p]<<8)|c[p+1];p+=2;if(n<0||p+n>c.Length)return;if(type==34){byte[] nal=new byte[n];Array.Copy(c,p,nal,0,n);ParseHevcPpsEarly(nal,t);}p+=n;}}
-  try{var sps=HevcSpsProbeParser.ParseHvcc(c);if(sps.VideoSignalTypePresent)t.ColorRange=sps.FullRange?"pc":"tv";if(sps.ColourDescriptionPresent){t.ColorPrimaries=ColorName(sps.ColourPrimaries);t.ColorTransfer=ColorName(sps.TransferCharacteristics);t.ColorMatrix=ColorName(sps.MatrixCoefficients);}}catch{}
+  try{var sps=HevcSpsProbeParser.ParseHvcc(c);if(sps.AspectRatioWidth>0&&sps.AspectRatioHeight>0)t.PixelAspect=sps.AspectRatioWidth+":"+sps.AspectRatioHeight;if(sps.VideoSignalTypePresent)t.ColorRange=sps.FullRange?"pc":"tv";if(sps.ColourDescriptionPresent){t.ColorPrimaries=ColorName(sps.ColourPrimaries);t.ColorTransfer=ColorName(sps.TransferCharacteristics);t.ColorMatrix=ColorName(sps.MatrixCoefficients);}}catch{}
  }
  static void ParsePrivate(NativeTrack t){try{if(t.CodecId=="V_MPEG4/ISO/AVC")ParseAvc(t.CodecPrivate,t);else if(t.CodecId=="V_MPEGH/ISO/HEVC")ParseHevc(t.CodecPrivate,t);else if(t.CodecId=="A_AAC"){ParseAac(t.CodecPrivate,t);if(!t.Ps&&t.Channels>0){t.CoreAudioChannels=(int)t.Channels;t.AudioChannels=(int)t.Channels;}else if(t.CoreAudioChannels<=0&&t.Channels>0)t.CoreAudioChannels=(int)t.Channels;if(t.OutputSamplingRate>0)t.OutputSampleRate=(int)t.OutputSamplingRate;}}catch{}}
  static void ParseMatroska(System.IO.FileStream fs,NativeMediaInfo r){fs.Position=0;var ends=new System.Collections.Generic.Stack<long>();NativeTrack track=null;long limit=Math.Min(fs.Length,64L*1024*1024);while(fs.Position<limit){while(ends.Count>0&&fs.Position>=ends.Peek()){long e=ends.Pop();if(track!=null&&ends.Count<3){ParsePrivate(track);if(!r.Tracks.Contains(track))r.Tracks.Add(track);track=null;}}long start=fs.Position;int il,sl;bool unk;ulong id;try{id=ReadId(fs,out il);if(il==0)break;ulong size=ReadSize(fs,out sl,out unk);long data=fs.Position;long end=unk?limit:Math.Min(limit,data+(long)size);if(id==0x1F43B675)break;if(id==0xAE){track=new NativeTrack();ends.Push(end);continue;}if(Master(id)){ends.Push(end);continue;}long n=end-data;if(n<0)break;
@@ -236,6 +236,10 @@ public sealed class H264QpValidationState {
  public bool QpAccumulatorReady=true;
  public bool ContextBankReady=true;
  public bool NeighborStateReady=true;
+ public bool ContextTablesReady=false;
+ public bool MacroblockSyntaxReady=false;
+ public bool ResidualSyntaxReady=false;
+ public bool ExactOutputEnabled=false;
  public string Status { get { return "CABAC arithmetic, common progressive slice header, RBSP reader, QP arithmetic, accumulator, context bank and neighbor state installed; macroblock syntax pending"; } }
 }
 
@@ -254,7 +258,7 @@ public sealed class HevcProbeBitReader {
 public sealed class HevcSpsProbeResult {
  public int SpsId,ChromaFormatIdc,Width,Height,BitDepthLuma,BitDepthChroma,Log2MaxPicOrderCntLsb,Log2MinCbSize,Log2CtbSize,CtbWidth,CtbHeight,NumShortTermRefPicSets,NumLongTermRefPicsSps;
  public bool SampleAdaptiveOffsetEnabled,TemporalMvpEnabled,LongTermRefsPresent,VuiPresent,VideoSignalTypePresent,ColourDescriptionPresent,FullRange,ChromaLocInfoPresent;
- public int ColourPrimaries,TransferCharacteristics,MatrixCoefficients,ChromaSampleLocTypeTopField,ChromaSampleLocTypeBottomField;
+ public int ColourPrimaries,TransferCharacteristics,MatrixCoefficients,ChromaSampleLocTypeTopField,ChromaSampleLocTypeBottomField,AspectRatioWidth,AspectRatioHeight;
  public int[] NumDeltaPocs=new int[0];
  public override string ToString(){return "SPS ID="+SpsId+", chroma="+ChromaFormatIdc+", size="+Width+"x"+Height+", depth="+BitDepthLuma+"/"+BitDepthChroma+", log2_max_poc_lsb="+Log2MaxPicOrderCntLsb+", CTB="+(1<<Log2CtbSize)+", ST-RPS="+NumShortTermRefPicSets+", LT="+NumLongTermRefPicsSps+", SAO="+SampleAdaptiveOffsetEnabled+", TMVP="+TemporalMvpEnabled;}
 }
@@ -264,7 +268,7 @@ public static class HevcSpsProbeParser {
  static void SkipScalingListData(HevcProbeBitReader b){for(int sizeId=0;sizeId<4;sizeId++){for(int matrixId=0;matrixId<6;matrixId+=(sizeId==3?3:1)){bool predMode=b.ReadBit()!=0;if(!predMode)b.ReadUE();else{int coefNum=Math.Min(64,1<<(4+(sizeId<<1)));if(sizeId>1)b.ReadSE();for(int i=0;i<coefNum;i++)b.ReadSE();}}}}
  static int ParseShortTermRps(HevcProbeBitReader b,int index,int total,int[] previous){bool inter=index!=0&&b.ReadBit()!=0;if(inter){if(index==total)b.ReadUE();b.ReadBit();b.ReadUE();int refCount=previous[index-1];int count=0;for(int j=0;j<=refCount;j++){bool used=b.ReadBit()!=0;bool useDelta=used||b.ReadBit()!=0;if(useDelta)count++;}return count;}int neg=(int)b.ReadUE(),pos=(int)b.ReadUE();for(int i=0;i<neg;i++){b.ReadUE();b.ReadBit();}for(int i=0;i<pos;i++){b.ReadUE();b.ReadBit();}return neg+pos;}
  static void ParseVuiPrefix(HevcProbeBitReader b,HevcSpsProbeResult r){
-  if(b.ReadBit()!=0){int aspectRatioIdc=(int)b.ReadBits(8);if(aspectRatioIdc==255){b.ReadBits(16);b.ReadBits(16);}}
+  if(b.ReadBit()!=0){int aspectRatioIdc=(int)b.ReadBits(8);int[,] sar={{0,0},{1,1},{12,11},{10,11},{16,11},{40,33},{24,11},{20,11},{32,11},{80,33},{18,11},{15,11},{64,33},{160,99},{4,3},{3,2},{2,1}};if(aspectRatioIdc==255){r.AspectRatioWidth=(int)b.ReadBits(16);r.AspectRatioHeight=(int)b.ReadBits(16);}else if(aspectRatioIdc>0&&aspectRatioIdc<17){r.AspectRatioWidth=sar[aspectRatioIdc,0];r.AspectRatioHeight=sar[aspectRatioIdc,1];}}
   if(b.ReadBit()!=0)b.ReadBit();
   r.VideoSignalTypePresent=b.ReadBit()!=0;
   if(r.VideoSignalTypePresent){b.ReadBits(3);r.FullRange=b.ReadBit()!=0;r.ColourDescriptionPresent=b.ReadBit()!=0;if(r.ColourDescriptionPresent){r.ColourPrimaries=(int)b.ReadBits(8);r.TransferCharacteristics=(int)b.ReadBits(8);r.MatrixCoefficients=(int)b.ReadBits(8);}}
@@ -339,7 +343,7 @@ public sealed class NativeMatroskaPacketScan : IDisposable {
   public byte[] ReadSmall(int n){byte[] x=new byte[n];for(int i=0;i<n;i++){int v=ReadByteFast();if(v<0)throw new System.IO.EndOfStreamException();x[i]=(byte)v;}return x;}
   public void Dispose(){file.Dispose();}
  }
-readonly double duration; readonly int nalLengthSize; readonly H264SliceHeaderConfig sliceConfig; readonly bool avcMode,hevcMode; readonly int hevcExtraSliceHeaderBits; readonly HevcHvccProbeResult hevcProbeContext; long hevcPrefixParsed,hevcPrefixRejected; string hevcPrefixFirstError=""; readonly long[] bins=new long[240]; readonly long[] qpHistogram=new long[64]; readonly StringBuilder hevcTypeSequence=new StringBuilder();
+ readonly object gate=new object(); readonly double duration; readonly int nalLengthSize; readonly H264SliceHeaderConfig sliceConfig; readonly bool avcMode,hevcMode; readonly int hevcExtraSliceHeaderBits; readonly HevcHvccProbeResult hevcProbeContext; long hevcPrefixParsed,hevcPrefixRejected; string hevcPrefixFirstError=""; readonly long[] bins=new long[240]; readonly long[] qpHistogram=new long[64]; readonly StringBuilder hevcTypeSequence=new StringBuilder();
  System.Threading.Thread thread; volatile bool cancel,done; string error=""; int exitCode=-1; long fileLength,position;
  long count,key,total,min=long.MaxValue,max,lastKey=-1,gTotal,gCount,gMin=long.MaxValue,gMax,iCount,pCount,bCount,other,hevcVcl,hevcIrap,hevcIdr,hevcCra,hevcBla,hevcTrail,hevcRasl,hevcRadl,hevcSliceParsed,hevcSliceRejected,sliceHeaderOk,sliceHeaderFailed,sliceQpSum,sliceQpSquares,sliceISum,sliceISquares,slicePSum,slicePSquares,sliceBSum,sliceBSquares,sliceIOk,slicePOk,sliceBOk,sliceIFail,slicePFail,sliceBFail,failEof,failAlignment,failQp,failRefList,failMarking,failOther; string firstSliceError=""; int sliceQpMin=999,sliceQpMax=-999;
  public NativeMatroskaPacketScan(double seconds,NativeTrack t){duration=seconds;avcMode=t!=null&&t.CodecId=="V_MPEG4/ISO/AVC";hevcMode=t!=null&&t.CodecId=="V_MPEGH/ISO/HEVC";hevcExtraSliceHeaderBits=t!=null?t.HevcExtraSliceHeaderBits:0;if(hevcMode&&t!=null&&t.CodecPrivate!=null){try{hevcProbeContext=HevcHvccContextProbe.Parse(t.CodecPrivate);}catch{hevcProbeContext=null;}}nalLengthSize=t!=null&&t.NalLengthSize>0?t.NalLengthSize:4;sliceConfig=new H264SliceHeaderConfig();if(t!=null){sliceConfig.Log2MaxFrameNum=t.Log2MaxFrameNum;sliceConfig.PicOrderCntType=t.PicOrderCntType;sliceConfig.Log2MaxPicOrderCntLsb=t.Log2MaxPicOrderCntLsb;sliceConfig.FrameMbsOnly=t.FrameMbsOnly;sliceConfig.BottomFieldPicOrderInFramePresent=t.BottomFieldPicOrderInFramePresent;sliceConfig.RedundantPicCntPresent=t.RedundantPicCntPresent;sliceConfig.EntropyCodingCabac=t.Cabac;sliceConfig.PicInitQpMinus26=t.PicInitQpMinus26;sliceConfig.DeblockingFilterControlPresent=t.DeblockingFilterControlPresent;sliceConfig.WeightedPred=t.WeightedPred;sliceConfig.WeightedBipredIdc=t.WeightedBipred;sliceConfig.NumRefIdxL0DefaultActiveMinus1=t.NumRefL0;sliceConfig.NumRefIdxL1DefaultActiveMinus1=t.NumRefL1;}}
@@ -406,6 +410,7 @@ function Dur($n){if(-not $n){return 'N/A'};$t=[TimeSpan]::FromSeconds([double]$n
 function FPS($x){$r = $x.avg_frame_rate;if(-not $r -or $r -eq '0/0'){return 'N/A'};$a = $r -split '/';if($a.Count -eq 2 -and [double]$a[1] -ne 0){'{0:N3}' -f ([double]$a[0]/[double]$a[1])}else{$r}}
 function GCD([long]$a,[long]$b){while($b -ne 0){$t=$a%$b;$a=$b;$b=$t};if($a -eq 0){1}else{[Math]::Abs($a)}}
 function Ratio($w,$h){if(-not $w -or -not $h){return 'N/A'};$g=GCD $w $h;'{0}:{1} = {2:N6}'-f([long]$w/$g),([long]$h/$g),([double]$w/$h)}
+function Display-Resolution($v){if($null -eq $v -or -not $v.width -or -not $v.height){return 'N/A'};$dw=[double]$v.width;$sar=[string]$v.sample_aspect_ratio;if($sar -and $sar -match '^(\d+):(\d+)$' -and [double]$matches[2] -ne 0){$dw=$dw*[double]$matches[1]/[double]$matches[2]};'{0} x {1}'-f([long][Math]::Round($dw),[long]$v.height)}
 function Multiple($n){foreach($m in 64,32,16,8,4,2){if($n % $m -eq 0){return "multiple of $m"}};'not a multiple of 2'}
 function Pct($n,$t){if($t){'{0:N3} %'-f(100.0*$n/$t)}else{'0.000 %'}}
 function Render-QpHistogram {
@@ -501,7 +506,7 @@ function Render {
         $level=if($video.level){'{0:N1}' -f ([double]$video.level/10)}else{'N/A'}
         $depth=if($video.bits_per_raw_sample){$video.bits_per_raw_sample}elseif(([string]$video.pix_fmt)-match'(9|10|12|14|16)'){$matches[1]}else{8}
         $color="$(NA $video.color_primaries) / $(NA $video.color_transfer) / $(NA $video.color_space) / $(NA $video.color_range)"
-        $lines+=@('','[ Video ]','',"Codec:              $(NA $video.codec_long_name)",$(if($video.profile -and $level -ne 'N/A'){"Profile / Level:    $($video.profile)@L$level"}else{"Profile / Level:    N/A"}),"Resolution:         $($video.width) x $($video.height)","Aspect ratio:       $(Ratio $video.width $video.height)",$(if((FPS $video) -ne 'N/A'){"Frame rate:         $(FPS $video) fps"}elseif($script:FrameResult -and $script:Duration -gt 0){"Frame rate:         $('{0:N3}' -f ($script:FrameResult.Count/$script:Duration)) fps (derived)"}else{"Frame rate:         N/A"}),"Pixel format:       $(NA $video.pix_fmt)","Bit depth:          $depth bit","Color:              $color")
+        $lines+=@('','[ Video ]','',"Codec:              $(NA $video.codec_long_name)",$(if($video.profile -and $level -ne 'N/A'){"Profile / Level:    $($video.profile)@L$level"}else{"Profile / Level:    N/A"}),"Resolution:         $($video.width) x $($video.height)","Display resolution: $(Display-Resolution $video)","Aspect ratio:       $(Ratio $video.width $video.height)",$(if((FPS $video) -ne 'N/A'){"Frame rate:         $(FPS $video) fps"}elseif($script:FrameResult -and $script:Duration -gt 0){"Frame rate:         $('{0:N3}' -f ($script:FrameResult.Count/$script:Duration)) fps (derived)"}else{"Frame rate:         N/A"}),"Pixel format:       $(NA $video.pix_fmt)","Bit depth:          $depth bit","Color:              $color")
         if($script:PacketResult){
             $r=$script:PacketResult
             $fv=0;if($script:FrameResult -and $script:Duration -gt 0){$fv=$script:FrameResult.Count/$script:Duration};$rr=$video.avg_frame_rate -split '/';if($fv -le 0 -and $rr.Count -eq 2 -and [double]$rr[1] -ne 0){$fv=[double]$rr[0]/[double]$rr[1]}
@@ -586,7 +591,7 @@ $title=Label 'Little Stream Detector (LSD)' 20 12 520 38;$title.Font=New-Object 
 $open=New-Object Windows.Forms.Button;$open.Text='Open video';$open.SetBounds(20,58,122,32);$cancel=New-Object Windows.Forms.Button;$cancel.Text='Cancel';$cancel.SetBounds(150,58,80,32);$cancel.Enabled=$false;$copy=New-Object Windows.Forms.Button;$copy.Text='Copy';$copy.SetBounds(238,58,88,32);$copy.Enabled=$false;$fileText=Label 'Drop a video or click Open video.' 338 65 596 24;$fileText.AutoEllipsis=$true;$fileText.Anchor='Top,Left,Right'
 $drop=New-Object Windows.Forms.Panel;$drop.SetBounds(20,100,914,72);$drop.Anchor='Top,Left,Right';$drop.BorderStyle='FixedSingle';$drop.AllowDrop=$true;$dl=Label 'DROP VIDEO HERE' 0 0 914 72;$dl.Dock='Fill';$dl.TextAlign='MiddleCenter';$dl.Font=New-Object Drawing.Font('Segoe UI',12,[Drawing.FontStyle]::Bold);$drop.Controls.Add($dl)
 $bar=New-Object Windows.Forms.ProgressBar;$bar.SetBounds(20,181,914,8);$bar.Style='Continuous';$bar.Visible=$false
-$chartBox=New-Object Windows.Forms.GroupBox;$chartBox.Text='Bitrate profile';$chartBox.SetBounds(20,198,914,142);$chartBox.Anchor='Top,Left,Right';$chart=New-Object Windows.Forms.Panel;$chart.Dock='Fill';$chart.BackColor=$RoyalPanel;$chartBox.Controls.Add($chart);$chart.Add_Resize({$chart.Invalidate()});$qpBox=New-Object Windows.Forms.GroupBox;$qpBox.Text='DRF distribution (frame-level SliceQPY)';$qpBox.SetBounds(20,348,914,154);$qpBox.Anchor='Top,Left,Right';$qpText=New-Object Windows.Forms.TextBox;$qpText.Multiline=$true;$qpText.ReadOnly=$true;$qpText.WordWrap=$false;$qpText.ScrollBars='Horizontal';$qpText.Dock='Fill';$qpText.Font=New-Object Drawing.Font('Consolas',9);$qpText.BackColor=$RoyalPanel;$qpText.ForeColor=$RoyalText;$qpBox.Controls.Add($qpText);$tabs=New-Object Windows.Forms.TabControl;$tabs.SetBounds(20,510,914,260);$tabs.Anchor='Top,Bottom,Left,Right'
+$chartBox=New-Object Windows.Forms.GroupBox;$chartBox.Text='Bitrate profile';$chartBox.SetBounds(20,198,914,142);$chartBox.Anchor='Top,Left,Right';$chart=New-Object Windows.Forms.Panel;$chart.Dock='Fill';$chart.BackColor=$RoyalPanel;$chartBox.Controls.Add($chart);$qpBox=New-Object Windows.Forms.GroupBox;$qpBox.Text='DRF distribution (frame-level SliceQPY)';$qpBox.SetBounds(20,348,914,154);$qpBox.Anchor='Top,Left,Right';$qpText=New-Object Windows.Forms.TextBox;$qpText.Multiline=$true;$qpText.ReadOnly=$true;$qpText.WordWrap=$false;$qpText.ScrollBars='Horizontal';$qpText.Dock='Fill';$qpText.Font=New-Object Drawing.Font('Consolas',9);$qpText.BackColor=$RoyalPanel;$qpText.ForeColor=$RoyalText;$qpBox.Controls.Add($qpText);$tabs=New-Object Windows.Forms.TabControl;$tabs.SetBounds(20,510,914,260);$tabs.Anchor='Top,Bottom,Left,Right'
 $summary=New-Object Windows.Forms.TextBox;$summary.Multiline=$true;$summary.ReadOnly=$true;$summary.ScrollBars='Both';$summary.WordWrap=$false;$summary.Dock='Fill';$summary.Font=New-Object Drawing.Font('Consolas',9)
 $grid=New-Object Windows.Forms.DataGridView;$grid.Dock='Fill';$grid.ReadOnly=$true;$grid.AllowUserToAddRows=$false;$grid.RowHeadersVisible=$false;$grid.AutoSizeColumnsMode='Fill'
 $json=New-Object Windows.Forms.TextBox;$json.Multiline=$true;$json.ReadOnly=$true;$json.ScrollBars='Both';$json.WordWrap=$false;$json.Dock='Fill';$json.Font=New-Object Drawing.Font('Consolas',9)
@@ -746,15 +751,14 @@ $toolTip=New-Object Windows.Forms.ToolTip;$toolTip.SetToolTip($open,'Native-only
 $chart.Add_Paint({
     param($sender,$e)
     $g=$e.Graphics;$g.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::None
-    $r=$sender.ClientRectangle;$g.SetClip($r);$g.Clear($RoyalPanel)
-    $brush=New-Object Drawing.SolidBrush($RoyalMuted)
-    if($script:BitrateBins.Count -lt 2){$f=New-Object Drawing.Font('Segoe UI',9);$g.DrawString('Native stream analysis continues automatically after quick metadata.',$f,$brush,10,10);$f.Dispose();$brush.Dispose();return}
-    $max=($script:BitrateBins|Measure-Object -Maximum).Maximum;if($max -le 0){$brush.Dispose();return}
+    $r=$sender.ClientRectangle;$g.Clear($RoyalPanel)
+    if($script:BitrateBins.Count -lt 2){$f=New-Object Drawing.Font('Segoe UI',9);$g.DrawString('Native stream analysis continues automatically after quick metadata.',$f,(New-Object Drawing.SolidBrush($RoyalMuted)),10,10);$f.Dispose();return}
+    $max=($script:BitrateBins|Measure-Object -Maximum).Maximum;if($max -le 0){return}
     $penGrid=New-Object Drawing.Pen($RoyalBorder,1);for($i=1;$i-lt4;$i++){$y=[int]($r.Height*$i/4);$g.DrawLine($penGrid,0,$y,$r.Width,$y)};$penGrid.Dispose()
     $pen=New-Object Drawing.Pen($RoyalBlueHi,1)
     $n=$script:BitrateBins.Count
     for($i=0;$i-lt$n;$i++){$x=[int]($i*($r.Width-1)/($n-1));$h=[int](($script:BitrateBins[$i]/[double]$max)*($r.Height-24));$g.DrawLine($pen,$x,$r.Height-18,$x,$r.Height-18-$h)}
-    $pen.Dispose();$font=New-Object Drawing.Font('Segoe UI',8);$g.DrawString('0:00',$font,$brush,2,$r.Height-16);$end=Dur $script:Duration;$sz=$g.MeasureString($end,$font);$g.DrawString($end,$font,$brush,$r.Width-$sz.Width-3,$r.Height-16);$g.DrawString(('Peak bucket: '+(Bytes $max)),$font,$brush,5,3);$font.Dispose();$brush.Dispose()
+    $pen.Dispose();$font=New-Object Drawing.Font('Segoe UI',8);$g.DrawString('0:00',$font,(New-Object Drawing.SolidBrush($RoyalMuted)),2,$r.Height-16);$end=Dur $script:Duration;$sz=$g.MeasureString($end,$font);$g.DrawString($end,$font,(New-Object Drawing.SolidBrush($RoyalMuted)),$r.Width-$sz.Width-3,$r.Height-16);$g.DrawString(('Peak bucket: '+(Bytes $max)),$font,(New-Object Drawing.SolidBrush($RoyalMuted)),5,3);$font.Dispose()
 })
 $timer=New-Object Windows.Forms.Timer
 $timer.Interval=100
