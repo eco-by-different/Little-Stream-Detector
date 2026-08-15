@@ -236,10 +236,6 @@ public sealed class H264QpValidationState {
  public bool QpAccumulatorReady=true;
  public bool ContextBankReady=true;
  public bool NeighborStateReady=true;
- public bool ContextTablesReady=false;
- public bool MacroblockSyntaxReady=false;
- public bool ResidualSyntaxReady=false;
- public bool ExactOutputEnabled=false;
  public string Status { get { return "CABAC arithmetic, common progressive slice header, RBSP reader, QP arithmetic, accumulator, context bank and neighbor state installed; macroblock syntax pending"; } }
 }
 
@@ -343,7 +339,7 @@ public sealed class NativeMatroskaPacketScan : IDisposable {
   public byte[] ReadSmall(int n){byte[] x=new byte[n];for(int i=0;i<n;i++){int v=ReadByteFast();if(v<0)throw new System.IO.EndOfStreamException();x[i]=(byte)v;}return x;}
   public void Dispose(){file.Dispose();}
  }
- readonly object gate=new object(); readonly double duration; readonly int nalLengthSize; readonly H264SliceHeaderConfig sliceConfig; readonly bool avcMode,hevcMode; readonly int hevcExtraSliceHeaderBits; readonly HevcHvccProbeResult hevcProbeContext; long hevcPrefixParsed,hevcPrefixRejected; string hevcPrefixFirstError=""; readonly long[] bins=new long[240]; readonly long[] qpHistogram=new long[64]; readonly StringBuilder hevcTypeSequence=new StringBuilder();
+readonly double duration; readonly int nalLengthSize; readonly H264SliceHeaderConfig sliceConfig; readonly bool avcMode,hevcMode; readonly int hevcExtraSliceHeaderBits; readonly HevcHvccProbeResult hevcProbeContext; long hevcPrefixParsed,hevcPrefixRejected; string hevcPrefixFirstError=""; readonly long[] bins=new long[240]; readonly long[] qpHistogram=new long[64]; readonly StringBuilder hevcTypeSequence=new StringBuilder();
  System.Threading.Thread thread; volatile bool cancel,done; string error=""; int exitCode=-1; long fileLength,position;
  long count,key,total,min=long.MaxValue,max,lastKey=-1,gTotal,gCount,gMin=long.MaxValue,gMax,iCount,pCount,bCount,other,hevcVcl,hevcIrap,hevcIdr,hevcCra,hevcBla,hevcTrail,hevcRasl,hevcRadl,hevcSliceParsed,hevcSliceRejected,sliceHeaderOk,sliceHeaderFailed,sliceQpSum,sliceQpSquares,sliceISum,sliceISquares,slicePSum,slicePSquares,sliceBSum,sliceBSquares,sliceIOk,slicePOk,sliceBOk,sliceIFail,slicePFail,sliceBFail,failEof,failAlignment,failQp,failRefList,failMarking,failOther; string firstSliceError=""; int sliceQpMin=999,sliceQpMax=-999;
  public NativeMatroskaPacketScan(double seconds,NativeTrack t){duration=seconds;avcMode=t!=null&&t.CodecId=="V_MPEG4/ISO/AVC";hevcMode=t!=null&&t.CodecId=="V_MPEGH/ISO/HEVC";hevcExtraSliceHeaderBits=t!=null?t.HevcExtraSliceHeaderBits:0;if(hevcMode&&t!=null&&t.CodecPrivate!=null){try{hevcProbeContext=HevcHvccContextProbe.Parse(t.CodecPrivate);}catch{hevcProbeContext=null;}}nalLengthSize=t!=null&&t.NalLengthSize>0?t.NalLengthSize:4;sliceConfig=new H264SliceHeaderConfig();if(t!=null){sliceConfig.Log2MaxFrameNum=t.Log2MaxFrameNum;sliceConfig.PicOrderCntType=t.PicOrderCntType;sliceConfig.Log2MaxPicOrderCntLsb=t.Log2MaxPicOrderCntLsb;sliceConfig.FrameMbsOnly=t.FrameMbsOnly;sliceConfig.BottomFieldPicOrderInFramePresent=t.BottomFieldPicOrderInFramePresent;sliceConfig.RedundantPicCntPresent=t.RedundantPicCntPresent;sliceConfig.EntropyCodingCabac=t.Cabac;sliceConfig.PicInitQpMinus26=t.PicInitQpMinus26;sliceConfig.DeblockingFilterControlPresent=t.DeblockingFilterControlPresent;sliceConfig.WeightedPred=t.WeightedPred;sliceConfig.WeightedBipredIdc=t.WeightedBipred;sliceConfig.NumRefIdxL0DefaultActiveMinus1=t.NumRefL0;sliceConfig.NumRefIdxL1DefaultActiveMinus1=t.NumRefL1;}}
@@ -590,7 +586,7 @@ $title=Label 'Little Stream Detector (LSD)' 20 12 520 38;$title.Font=New-Object 
 $open=New-Object Windows.Forms.Button;$open.Text='Open video';$open.SetBounds(20,58,122,32);$cancel=New-Object Windows.Forms.Button;$cancel.Text='Cancel';$cancel.SetBounds(150,58,80,32);$cancel.Enabled=$false;$copy=New-Object Windows.Forms.Button;$copy.Text='Copy';$copy.SetBounds(238,58,88,32);$copy.Enabled=$false;$fileText=Label 'Drop a video or click Open video.' 338 65 596 24;$fileText.AutoEllipsis=$true;$fileText.Anchor='Top,Left,Right'
 $drop=New-Object Windows.Forms.Panel;$drop.SetBounds(20,100,914,72);$drop.Anchor='Top,Left,Right';$drop.BorderStyle='FixedSingle';$drop.AllowDrop=$true;$dl=Label 'DROP VIDEO HERE' 0 0 914 72;$dl.Dock='Fill';$dl.TextAlign='MiddleCenter';$dl.Font=New-Object Drawing.Font('Segoe UI',12,[Drawing.FontStyle]::Bold);$drop.Controls.Add($dl)
 $bar=New-Object Windows.Forms.ProgressBar;$bar.SetBounds(20,181,914,8);$bar.Style='Continuous';$bar.Visible=$false
-$chartBox=New-Object Windows.Forms.GroupBox;$chartBox.Text='Bitrate profile';$chartBox.SetBounds(20,198,914,142);$chartBox.Anchor='Top,Left,Right';$chart=New-Object Windows.Forms.Panel;$chart.Dock='Fill';$chart.BackColor=$RoyalPanel;$chartBox.Controls.Add($chart);$qpBox=New-Object Windows.Forms.GroupBox;$qpBox.Text='DRF distribution (frame-level SliceQPY)';$qpBox.SetBounds(20,348,914,154);$qpBox.Anchor='Top,Left,Right';$qpText=New-Object Windows.Forms.TextBox;$qpText.Multiline=$true;$qpText.ReadOnly=$true;$qpText.WordWrap=$false;$qpText.ScrollBars='Horizontal';$qpText.Dock='Fill';$qpText.Font=New-Object Drawing.Font('Consolas',9);$qpText.BackColor=$RoyalPanel;$qpText.ForeColor=$RoyalText;$qpBox.Controls.Add($qpText);$tabs=New-Object Windows.Forms.TabControl;$tabs.SetBounds(20,510,914,260);$tabs.Anchor='Top,Bottom,Left,Right'
+$chartBox=New-Object Windows.Forms.GroupBox;$chartBox.Text='Bitrate profile';$chartBox.SetBounds(20,198,914,142);$chartBox.Anchor='Top,Left,Right';$chart=New-Object Windows.Forms.Panel;$chart.Dock='Fill';$chart.BackColor=$RoyalPanel;$chartBox.Controls.Add($chart);$chart.Add_Resize({$chart.Invalidate()});$qpBox=New-Object Windows.Forms.GroupBox;$qpBox.Text='DRF distribution (frame-level SliceQPY)';$qpBox.SetBounds(20,348,914,154);$qpBox.Anchor='Top,Left,Right';$qpText=New-Object Windows.Forms.TextBox;$qpText.Multiline=$true;$qpText.ReadOnly=$true;$qpText.WordWrap=$false;$qpText.ScrollBars='Horizontal';$qpText.Dock='Fill';$qpText.Font=New-Object Drawing.Font('Consolas',9);$qpText.BackColor=$RoyalPanel;$qpText.ForeColor=$RoyalText;$qpBox.Controls.Add($qpText);$tabs=New-Object Windows.Forms.TabControl;$tabs.SetBounds(20,510,914,260);$tabs.Anchor='Top,Bottom,Left,Right'
 $summary=New-Object Windows.Forms.TextBox;$summary.Multiline=$true;$summary.ReadOnly=$true;$summary.ScrollBars='Both';$summary.WordWrap=$false;$summary.Dock='Fill';$summary.Font=New-Object Drawing.Font('Consolas',9)
 $grid=New-Object Windows.Forms.DataGridView;$grid.Dock='Fill';$grid.ReadOnly=$true;$grid.AllowUserToAddRows=$false;$grid.RowHeadersVisible=$false;$grid.AutoSizeColumnsMode='Fill'
 $json=New-Object Windows.Forms.TextBox;$json.Multiline=$true;$json.ReadOnly=$true;$json.ScrollBars='Both';$json.WordWrap=$false;$json.Dock='Fill';$json.Font=New-Object Drawing.Font('Consolas',9)
@@ -750,14 +746,15 @@ $toolTip=New-Object Windows.Forms.ToolTip;$toolTip.SetToolTip($open,'Native-only
 $chart.Add_Paint({
     param($sender,$e)
     $g=$e.Graphics;$g.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::None
-    $r=$sender.ClientRectangle;$g.Clear($RoyalPanel)
-    if($script:BitrateBins.Count -lt 2){$f=New-Object Drawing.Font('Segoe UI',9);$g.DrawString('Native stream analysis continues automatically after quick metadata.',$f,(New-Object Drawing.SolidBrush($RoyalMuted)),10,10);$f.Dispose();return}
-    $max=($script:BitrateBins|Measure-Object -Maximum).Maximum;if($max -le 0){return}
+    $r=$sender.ClientRectangle;$g.SetClip($r);$g.Clear($RoyalPanel)
+    $brush=New-Object Drawing.SolidBrush($RoyalMuted)
+    if($script:BitrateBins.Count -lt 2){$f=New-Object Drawing.Font('Segoe UI',9);$g.DrawString('Native stream analysis continues automatically after quick metadata.',$f,$brush,10,10);$f.Dispose();$brush.Dispose();return}
+    $max=($script:BitrateBins|Measure-Object -Maximum).Maximum;if($max -le 0){$brush.Dispose();return}
     $penGrid=New-Object Drawing.Pen($RoyalBorder,1);for($i=1;$i-lt4;$i++){$y=[int]($r.Height*$i/4);$g.DrawLine($penGrid,0,$y,$r.Width,$y)};$penGrid.Dispose()
     $pen=New-Object Drawing.Pen($RoyalBlueHi,1)
     $n=$script:BitrateBins.Count
     for($i=0;$i-lt$n;$i++){$x=[int]($i*($r.Width-1)/($n-1));$h=[int](($script:BitrateBins[$i]/[double]$max)*($r.Height-24));$g.DrawLine($pen,$x,$r.Height-18,$x,$r.Height-18-$h)}
-    $pen.Dispose();$font=New-Object Drawing.Font('Segoe UI',8);$g.DrawString('0:00',$font,(New-Object Drawing.SolidBrush($RoyalMuted)),2,$r.Height-16);$end=Dur $script:Duration;$sz=$g.MeasureString($end,$font);$g.DrawString($end,$font,(New-Object Drawing.SolidBrush($RoyalMuted)),$r.Width-$sz.Width-3,$r.Height-16);$g.DrawString(('Peak bucket: '+(Bytes $max)),$font,(New-Object Drawing.SolidBrush($RoyalMuted)),5,3);$font.Dispose()
+    $pen.Dispose();$font=New-Object Drawing.Font('Segoe UI',8);$g.DrawString('0:00',$font,$brush,2,$r.Height-16);$end=Dur $script:Duration;$sz=$g.MeasureString($end,$font);$g.DrawString($end,$font,$brush,$r.Width-$sz.Width-3,$r.Height-16);$g.DrawString(('Peak bucket: '+(Bytes $max)),$font,$brush,5,3);$font.Dispose();$brush.Dispose()
 })
 $timer=New-Object Windows.Forms.Timer
 $timer.Interval=100
