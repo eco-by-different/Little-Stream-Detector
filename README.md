@@ -1,9 +1,18 @@
 ![Repo size](https://img.shields.io/github/repo-size/eco-by-different/Little-Stream-Detector)
 ![Last commit](https://img.shields.io/github/last-commit/eco-by-different/Little-Stream-Detector)
 
-# Little Stream Detector (LSD) 1.0
+# Little Stream Detector (LSD) 1.1 
 
 Little Stream Detector is a lightweight and portable tool for fast video file analysis without decoding or transcoding.
+
+##
+## What's New in 1.1
+
+- Improved application layout
+- New compact DRF distribution view with frame counts and percentages
+- Added DRF summary statistics
+- Improved use of available window space
+- Minor fixes and user interface improvements
 
 ## Features
 
