@@ -24,7 +24,7 @@ Fragmented MP4 files are not supported in version 2.0.
 ## Features
 
 - Native Matroska, WebM, MP4, M4V, and MOV parsing
-- H.264/AVC and H.265/HEVC analysis
+- H.264/AVC, H.265/HEVC and AV1 analysis
 - I, P, and B picture detection
 - GOP structure and bitrate profile
 - Native frame-level AVC and HEVC SliceQPY/DRF analysis
