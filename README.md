@@ -7,13 +7,14 @@ Little Stream Detector is a lightweight and portable tool for fast video file an
 
 ## What's New in 2.0
 
-- Added native MP4, M4V and MOV support.
-- Added AVC/H.264 and HEVC/H.265 analysis for both Matroska and MP4.
+- Added native support for Matroska/WebM and unfragmented MP4/M4V/MOV containers.
+- Added native H.264/AVC, H.265/HEVC, and AV1 bitstream analysis.
+- Added frame-level AV1 analysis, including frame types, hidden frames, `show_existing_frame`, and Base Q Index statistics.
+- Added native `avcC`, `hvcC`, `av1C`, and AAC `AudioSpecificConfig` parsing.
 - Introduced a shared, container-independent analysis pipeline.
-- Added native `avcC`, `hvcC`, and AAC configuration parsing.
 - Improved MP4 loading performance and GUI responsiveness.
-- Fixed HEVC QP analysis for B-frames without weighted biprediction.
-- Cleaned up obsolete validation and development code.
+- Fixed HEVC B-frame QP analysis without weighted biprediction.
+- Removed obsolete development and validation code.
 - No external tools or temporary files are required.
 
 ### Known Limitation
