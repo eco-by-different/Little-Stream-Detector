@@ -1,26 +1,32 @@
 ![Repo size](https://img.shields.io/github/repo-size/eco-by-different/Little-Stream-Detector)
 ![Last commit](https://img.shields.io/github/last-commit/eco-by-different/Little-Stream-Detector)
 
-# Little Stream Detector (LSD) 1.1 
+# Little Stream Detector (LSD) 2.0
 
 Little Stream Detector is a lightweight and portable tool for fast video file analysis without decoding or transcoding.
 
-##
-## What's New in 1.1
+## What's New in 2.0
 
-- Improved application layout
-- New compact DRF distribution view with frame counts and percentages
-- Added DRF summary statistics
-- Improved use of available window space
-- Minor fixes and user interface improvements
+- Added native MP4, M4V, and MOV support.
+- Added AVC/H.264 and HEVC/H.265 analysis for both Matroska and MP4.
+- Introduced a shared, container-independent analysis pipeline.
+- Added native `avcC`, `hvcC`, and AAC configuration parsing.
+- Improved MP4 loading performance and GUI responsiveness.
+- Fixed HEVC QP analysis for B-frames without weighted biprediction.
+- Cleaned up obsolete validation and development code.
+- No external tools or temporary files are required.
+
+### Known Limitation
+
+Fragmented MP4 files are not supported in version 2.0.
 
 ## Features
 
-- Native Matroska and WebM parsing
-- H.264 / AVC and H.265 / HEVC analysis
+- Native Matroska, WebM, MP4, M4V, and MOV parsing
+- H.264/AVC and H.265/HEVC analysis
 - I, P, and B picture detection
 - GOP structure and bitrate profile
-- Native frame-level HEVC SliceQPY / DRF analysis
+- Native frame-level AVC and HEVC SliceQPY/DRF analysis
 - DRF distribution histogram
 - Video and audio stream information
 - Summary, Streams, JSON, and Log views
@@ -30,14 +36,13 @@ Little Stream Detector is a lightweight and portable tool for fast video file an
 
 LSD does not use FFmpeg, FFprobe, MediaInfo, or any other external multimedia tool.
 
-Video files are only read and analyzed. They are never decoded, modified, or transcoded.
+Video files are read and analyzed only. They are never decoded, modified, or transcoded.
 
----
+## Antivirus Notice
 
-# Antivirus Notice (False Positives)
-The .exe binary is generated, which some sensitive antivirus engines, including Windows Defender or machine-learning based scanners, may flag as a false positive.
+The executable is generated from a PowerShell-based application. Some sensitive antivirus engines, including Windows Defender and machine-learning-based scanners, may occasionally report a false positive.
 
-The underlying PowerShell script is clean. If your system blocks the `.exe`, you can safely run the raw `LSD.ps1` script instead.
+The underlying `LSD.ps1` script is included for transparency. If the executable is blocked, review and run the PowerShell script directly instead.
 
 ---
 
