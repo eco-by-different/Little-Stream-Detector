@@ -7,7 +7,7 @@ Little Stream Detector is a lightweight and portable tool for fast video file an
 
 ## What's New in 2.0
 
-- Added native MP4, M4V, and MOV support.
+- Added native MP4, M4V and MOV support.
 - Added AVC/H.264 and HEVC/H.265 analysis for both Matroska and MP4.
 - Introduced a shared, container-independent analysis pipeline.
 - Added native `avcC`, `hvcC`, and AAC configuration parsing.
