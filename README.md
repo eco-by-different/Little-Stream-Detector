@@ -1,10 +1,6 @@
 ![Repo size](https://img.shields.io/github/repo-size/eco-by-different/Little-Stream-Detector)
 ![Last commit](https://img.shields.io/github/last-commit/eco-by-different/Little-Stream-Detector)
 
-# Little Stream Detector (LSD) 2.0
-
-Little Stream Detector is a lightweight and portable tool for fast video file analysis without decoding or transcoding.
-
 ## What's New in 2.0
 
 - Added native support for Matroska/WebM, AVI 1.0, and unfragmented MP4/M4V/MOV containers.
@@ -58,7 +54,48 @@ Little Stream Detector is a lightweight and portable tool for fast video file an
 - H.264/AVC analysis
 - H.265/HEVC analysis
 - AV1 analysis
-- MPEG-
+- MPEG-4 Part 2/XviD analysis
+- AVC configuration parsing from `avcC`
+- AVC Annex B parsing with SPS/PPS discovery
+- HEVC configuration parsing from `hvcC`
+- AV1 configuration parsing from `av1C`
+- MPEG-4 Visual Object Layer and VOP header analysis
+- I, P, and B picture detection
+- Keyframe and GOP structure analysis
+- Packet size and bitrate profile analysis
+- Native frame-level AVC and HEVC SliceQPY/DRF analysis
+- Native AV1 Base Q Index analysis
+- Native MPEG-4 Part 2 VOP quantizer analysis
+- Quantizer distribution histograms
+- Packet-to-frame consistency validation
+- Codec-derived color metadata for AVC, HEVC, and AV1
+
+### Audio Analysis
+
+- AAC-LC analysis
+- HE-AAC with SBR detection
+- HE-AACv2 with SBR and Parametric Stereo detection
+- MPEG-1 Layer III/MP3 frame analysis
+- Dolby Digital/AC-3 syncframe analysis
+- Dolby Digital Plus/E-AC-3 syncframe analysis
+- Native `AudioSpecificConfig`, `dac3`, and `dec3` parsing
+- Sample rate, channel count, and channel layout reporting
+- Canonical audio sample accounting
+- Rejected-sample and first-failure reporting
+- Codec-derived decoded-duration calculation
+- Exact MP3, AC-3, and E-AC-3 bitrate calculation
+- Multiple audio track association
+
+### Interface and Reports
+
+- Video and audio stream information
+- Summary, Streams, JSON, and Log views
+- Bitrate profile graph
+- DRF, QP, Base Q Index, and VOP quantizer histograms
+- File selection and drag-and-drop support
+- Responsive background metadata preparation and analysis
+- Copyable analysis reports
+- No external multimedia tools or temporary files
 
 ## Zero Dependencies
 
