@@ -7,31 +7,58 @@ Little Stream Detector is a lightweight and portable tool for fast video file an
 
 ## What's New in 2.0
 
-- Added native support for Matroska/WebM and unfragmented MP4/M4V/MOV containers.
-- Added native H.264/AVC, H.265/HEVC, and AV1 bitstream analysis.
+- Added native support for Matroska/WebM, AVI 1.0, and unfragmented MP4/M4V/MOV containers.
+- Added native H.264/AVC, H.265/HEVC, AV1, and MPEG-4 Part 2/XviD bitstream analysis.
+- Added native H.264/AVC Annex B support for AVI, including SPS and PPS discovery from video samples.
+- Added native AAC, MP3, AC-3, and E-AC-3 audio analysis.
+- Added AAC-LC, HE-AAC, and HE-AACv2 configuration detection.
+- Added MPEG Audio frame validation, decoded-duration accounting, and exact MP3 bitrate calculation.
+- Added Dolby syncframe validation, decoded-duration accounting, and exact AC-3/E-AC-3 bitrate calculation.
 - Added frame-level AV1 analysis, including frame types, hidden frames, `show_existing_frame`, and Base Q Index statistics.
-- Added native `avcC`, `hvcC`, `av1C`, and AAC `AudioSpecificConfig` parsing.
-- Introduced a shared, container-independent analysis pipeline.
-- Improved MP4 loading performance and GUI responsiveness.
+- Added native MPEG-4 Part 2/XviD VOP analysis, including I/P/B picture detection and VOP quantizer statistics.
+- Added native `avcC`, `hvcC`, `av1C`, AAC `AudioSpecificConfig`, `dac3`, and `dec3` parsing.
+- Added support for QuickTime audio sample entry versions 0, 1, and 2.
+- Added native MP4/MOV audio support for AAC, MP3, AC-3, and E-AC-3.
+- Added native AVI audio support for MP3 and AC-3.
+- Added container metadata detection for Matroska, AVI, MP4, and MOV.
+- Introduced a shared, container-independent canonical media analysis pipeline.
+- Added canonical video and audio sample indexes with sample accounting and validation.
+- Improved MP4/MOV loading performance and GUI responsiveness.
+- Fixed AVI bitrate profile generation and zero-length `idx1` sample handling.
 - Fixed HEVC B-frame QP analysis without weighted biprediction.
+- Improved reporting of unavailable or unsignaled metadata.
 - Removed obsolete development and validation code.
-- No external tools or temporary files are required.
+- No external multimedia tools or temporary files are required.
 
-### Known Limitation
+### Known Limitations
 
-Fragmented MP4 files are not supported in version 2.0.
+- Fragmented MP4 files using `moof`, `traf`, and `trun` are not supported in version 2.0.
+- OpenDML AVI and multi-segment `AVIX` files are not supported.
+- AVI H.264/AVC support is intended for Annex B streams. AVI files using unusual length-prefixed AVC storage may not be supported.
+- Complete PCM analysis is not included.
+- AVI files containing AAC or E-AC-3 audio are not currently supported.
+- Container-only color metadata such as MP4 `colr`/`nclx` or Matroska `Colour` elements is not currently used as a fallback.
+- Some metadata may be shown as `N/A` when it is not explicitly present in the container or codec bitstream.
 
 ## Features
 
-- Native Matroska, WebM, MP4, M4V, and MOV parsing
-- H.264/AVC, H.265/HEVC and AV1 analysis
-- I, P, and B picture detection
-- GOP structure and bitrate profile
-- Native frame-level AVC and HEVC SliceQPY/DRF analysis
-- DRF distribution histogram
-- Video and audio stream information
-- Summary, Streams, JSON, and Log views
-- File selection and drag-and-drop support
+### Containers
+
+- Native Matroska and WebM parsing
+- Native AVI 1.0 parsing with `idx1` sample indexing
+- Native unfragmented MP4, M4V, and MOV parsing
+- Native Matroska block and lacing processing
+- Native MP4/MOV sample table processing using `stsc`, `stsz`, `stco`/`co64`, `stts`, `ctts`, and `stss`
+- Native AVI `LIST/INFO/ISFT` metadata detection
+- Native MP4/MOV `©too` and QuickTime `©swr` metadata detection
+- Separate Matroska muxing and writing application reporting
+
+### Video Analysis
+
+- H.264/AVC analysis
+- H.265/HEVC analysis
+- AV1 analysis
+- MPEG-
 
 ## Zero Dependencies
 
