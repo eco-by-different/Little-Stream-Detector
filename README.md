@@ -15,10 +15,10 @@ The application does not use FFmpeg, FFprobe, MediaInfo, or other external multi
 ![lsd-gui.png](lsd-gui.png)
 
 ---
-# Antivirus Notice
-The executable is generated from a PowerShell-based application. Some sensitive antivirus engines, including Windows Defender and machine-learning-based scanners, may occasionally report a false positive.
+# Antivirus Notice (False Positives)
+The `.exe` binary is generated, which some sensitive antivirus engines, including Windows Defender or machine-learning based scanners, may flag as a false positive.
 
-The underlying `LSD.ps1` script is included for transparency. If the executable is blocked, review and run the PowerShell script directly instead.
+The underlying PowerShell script is clean. If your system blocks the `.exe`, you can safely run the raw `LSD.ps1` script instead.
 
 ---
 ## Usage
