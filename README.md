@@ -5,7 +5,7 @@
 
 Little Stream Detector (LSD) is a lightweight and portable video stream analyzer for Windows.
 
-LSD performs native Native Matroska, WebM, MP4, M4V, MOV, AVI parsing and native XviD, AVC/H.264, HEVC/H.265 and AV1 bitstream analysis. It provides frame-level QP/DRF statistics, DRF distribution, GOP and I/P/B frame analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
+LSD performs native Matroska, WebM, MP4, M4V, MOV, AVI parsing and native XviD, AVC/H.264, HEVC/H.265 and AV1 bitstream analysis. It provides frame-level QP/DRF statistics, DRF distribution, GOP and I/P/B frame analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
 
 The application does not use FFmpeg, FFprobe, MediaInfo, or other external multimedia tools. Video files are read and analyzed without decoding, modification, or transcoding.
 
