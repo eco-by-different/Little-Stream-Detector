@@ -1,6 +1,50 @@
 ![Repo size](https://img.shields.io/github/repo-size/eco-by-different/Little-Stream-Detector)
 ![Last commit](https://img.shields.io/github/last-commit/eco-by-different/Little-Stream-Detector)
 
+# Little Stream Detector (LSD)
+
+Little Stream Detector (LSD) is a lightweight and portable video stream analyzer for Windows.
+
+LSD performs native Native Matroska, WebM, MP4, M4V, MOV, AVI parsing and native XviD, AVC/H.264, HEVC/H.265 and AV1 bitstream analysis. It provides frame-level QP/DRF statistics, DRF distribution, GOP and I/P/B frame analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
+
+The application does not use FFmpeg, FFprobe, MediaInfo, or other external multimedia tools. Video files are read and analyzed without decoding, modification, or transcoding.
+
+---
+## Screenshot
+
+![lsd-gui.png](lsd-gui.png)
+
+## Antivirus Notice
+
+The executable is generated from a PowerShell-based application. Some sensitive antivirus engines, including Windows Defender and machine-learning-based scanners, may occasionally report a false positive.
+
+The underlying `LSD.ps1` script is included for transparency. If the executable is blocked, review and run the PowerShell script directly instead.
+
+## Usage
+
+1. Run `LSD.exe`.
+2. Drag a video file into the application window, or click **Open video**.
+3. Wait for the native analysis to complete.
+4. Use **Copy** to copy the generated report.
+
+No installation or administrator privileges are required.
+
+## Running the PowerShell source
+
+If `LSD.ps1` was downloaded from the Internet, Windows may block it.
+
+Right-click `LSD.ps1`, select **Properties**, check **Unblock**, and click **Apply**. The script can then be started using **Run with PowerShell**.
+
+Alternatively, unblock the downloaded ZIP file before extracting it. This prevents the extracted files from inheriting the Internet security marker.
+
+This step is not required for the compiled executable.
+
+## System Requirements
+
+- Windows 10 or Windows 11
+- 64-bit Windows recommended
+
+---
 ## What's New in 2.0
 
 - Added native support for Matroska/WebM, AVI, and unfragmented MP4/M4V/MOV containers.
@@ -114,48 +158,6 @@
 - Copyable analysis reports
 - Explicit reporting of unavailable or unsignaled values as `N/A`
 - No external multimedia tools or temporary files
-
-## Zero Dependencies
-
-LSD does not use FFmpeg, FFprobe, MediaInfo, or any other external multimedia tool.
-
-Video files are read and analyzed only. They are never decoded, modified, or transcoded.
-
-## Antivirus Notice
-
-The executable is generated from a PowerShell-based application. Some sensitive antivirus engines, including Windows Defender and machine-learning-based scanners, may occasionally report a false positive.
-
-The underlying `LSD.ps1` script is included for transparency. If the executable is blocked, review and run the PowerShell script directly instead.
-
----
-
-## Screenshot
-
-![lsd-gui.png](lsd-gui.png)
-
-## Usage
-
-1. Run `LSD.exe`.
-2. Drag a video file into the application window, or click **Open video**.
-3. Wait for the native analysis to complete.
-4. Use **Copy** to copy the generated report.
-
-No installation or administrator privileges are required.
-
-## Running the PowerShell source
-
-If `LSD.ps1` was downloaded from the Internet, Windows may block it.
-
-Right-click `LSD.ps1`, select **Properties**, check **Unblock**, and click **Apply**. The script can then be started using **Run with PowerShell**.
-
-Alternatively, unblock the downloaded ZIP file before extracting it. This prevents the extracted files from inheriting the Internet security marker.
-
-This step is not required for the compiled executable.
-
-## System Requirements
-
-- Windows 10 or Windows 11
-- 64-bit Windows recommended
 
 ## License
 
