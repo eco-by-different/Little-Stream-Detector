@@ -978,16 +978,18 @@ function Start-Scan {
     if(-not $script:Meta -or $script:ScanJob){return}
     $script:Cancelled=$false
     try {
+        $container=$script:NativeInfo.Container
+        $directCanonical=$container -in @('MP4 / MOV','AVI')
         $nativeVideo=@($script:NativeInfo.Tracks | Where-Object { $_.Kind -eq 'video' })[0]
         $nativeAudio=@($script:NativeInfo.Tracks | Where-Object { $_.Kind -eq 'audio' })[0]
         if($null -eq $nativeVideo){throw 'Native video track was not found.'}
         $script:ReadyTrack=@($script:ReadyMedia.Tracks | Where-Object { $_.TrackType -eq 'video' -and $_.TrackId -eq $nativeVideo.Number })[0]
         $script:ReadyAudioTrack=@($script:ReadyMedia.Tracks | Where-Object { $_.TrackType -eq 'audio' })[0]
-        if($script:ReadyTrack -and $script:NativeInfo.Container -ne 'MP4 / MOV' -and $script:NativeInfo.Container -ne 'AVI'){$script:ReadyTrack.Samples.Clear()}
+        if($script:ReadyTrack -and -not $directCanonical){$script:ReadyTrack.Samples.Clear()}
         $script:ScanJob=New-Object NativeMatroskaPacketScan -ArgumentList ([double]$script:Duration),$nativeVideo,$script:ReadyTrack,([long]$script:ReadyMedia.TimecodeScale),$nativeAudio,$script:ReadyAudioTrack
-        $script:PacketEngine=if($script:NativeInfo.Container -eq 'MP4 / MOV'){'Native C# MP4 canonical'}else{'Native C# Matroska preparation'}
+        $script:PacketEngine=if($container -eq 'MP4 / MOV'){'Native C# MP4 canonical'}else{'Native C# Matroska preparation'}
         $script:StageStarted=[DateTime]::UtcNow
-        if($script:NativeInfo.Container -eq 'MP4 / MOV' -or $script:NativeInfo.Container -eq 'AVI'){Update-CanonicalAudioAnalysis;$script:ScanPhase='canonical';$script:ScanJob.StartCanonical($script:File)}else{$script:ScanPhase='container-index';$script:ScanJob.Start($script:File,[long]$nativeVideo.Number)}
+        if($directCanonical){Update-CanonicalAudioAnalysis;$script:ScanPhase='canonical';$script:ScanJob.StartCanonical($script:File)}else{$script:ScanPhase='container-index';$script:ScanJob.Start($script:File,[long]$nativeVideo.Number)}
         Busy $true
         $bar.Value=0
         $status.Text=if($script:ScanPhase -eq 'container-index'){'Phase 1/2 - indexing Matroska samples...'}else{'Analyzing canonical video samples...'}
