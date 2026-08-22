@@ -1001,6 +1001,17 @@ function Start-Scan {
     }
 }
 
+function ConvertTo-QuantizerHistogram([string]$histogram) {
+    $counts=@{}
+    foreach($pair in ($histogram -split ',')) {
+        if([string]::IsNullOrWhiteSpace($pair)){continue}
+        $kv=$pair -split ':'
+        if($kv.Count -ne 2){continue}
+        $counts[[int]$kv[0]]=[long]$kv[1]
+    }
+    return $counts
+}
+
 function Finish-Scan([string]$value,$bins) {
     $x=$value -split '\|'
     $result=[pscustomobject]@{Count=[long]$x[0];Key=[long]$x[1];Total=[long]$x[2];Minimum=[long]$x[3];Maximum=[long]$x[4];GopMinimum=[long]$x[5];GopMaximum=[long]$x[6];I=[long]$x[7];P=[long]$x[8];B=[long]$x[9];Other=[long]$x[10];Bitrate=[double]::Parse($x[11],[Globalization.CultureInfo]::InvariantCulture);Average=[double]::Parse($x[12],[Globalization.CultureInfo]::InvariantCulture);GopAverage=[double]::Parse($x[13],[Globalization.CultureInfo]::InvariantCulture)}
@@ -1014,14 +1025,11 @@ function Finish-Scan([string]$value,$bins) {
         $script:NativeHevcQpValidated=($script:SliceQpDiagnostic.Failed -eq 0 -and $script:FrameResult -and $script:SliceQpDiagnostic.Parsed -eq $script:FrameResult.Count)
         $script:NativeHevcQpReason=if($script:NativeHevcQpValidated){'Native HEVC slice parser completed all frames; no external tool required.'}else{'Native HEVC QP validation incomplete.'}
     }
-    if($hv -and $hv.CodecId -eq 'V_AV1' -and $script:Av1Diagnostic -and $script:Av1Diagnostic.QuantRejected -eq 0 -and $script:Av1Diagnostic.QuantParsed -gt 0){$script:QpMode='AV1 Base Q Index';$script:QpCounts=@{};foreach($pair in ($script:Av1Diagnostic.BaseQHistogram -split ',')){if($pair){$kv=$pair -split ':';if($kv.Count -eq 2){$script:QpCounts[[int]$kv[0]]=[long]$kv[1]}}}}
-    if($hv -and $hv.CodecId -eq 'V_MPEG4/ISO/ASP' -and $script:Mpeg4Diagnostic -and $script:Mpeg4Diagnostic.Rejected -eq 0 -and $script:Mpeg4Diagnostic.Parsed -gt 0){$script:QpMode='MPEG-4 VOP Quantizer';$script:QpCounts=@{};foreach($pair in ($script:Mpeg4Diagnostic.Histogram -split ',')){if($pair){$kv=$pair -split ':';if($kv.Count -eq 2){$script:QpCounts[[int]$kv[0]]=[long]$kv[1]}}}}
+    if($hv -and $hv.CodecId -eq 'V_AV1' -and $script:Av1Diagnostic -and $script:Av1Diagnostic.QuantRejected -eq 0 -and $script:Av1Diagnostic.QuantParsed -gt 0){$script:QpMode='AV1 Base Q Index';$script:QpCounts=ConvertTo-QuantizerHistogram $script:Av1Diagnostic.BaseQHistogram}
+    if($hv -and $hv.CodecId -eq 'V_MPEG4/ISO/ASP' -and $script:Mpeg4Diagnostic -and $script:Mpeg4Diagnostic.Rejected -eq 0 -and $script:Mpeg4Diagnostic.Parsed -gt 0){$script:QpMode='MPEG-4 VOP Quantizer';$script:QpCounts=ConvertTo-QuantizerHistogram $script:Mpeg4Diagnostic.Histogram}
     if($script:SliceQpDiagnostic -and $script:FrameResult -and $script:SliceQpDiagnostic.Failed -eq 0 -and $script:SliceQpDiagnostic.Parsed -eq $script:FrameResult.Count) {
         $script:QpMode='SliceQPY'
-        $script:QpCounts=@{}
-        foreach($pair in ($script:SliceQpDiagnostic.Histogram -split ',')) {
-            if($pair){$kv=$pair -split ':';if($kv.Count -eq 2){$script:QpCounts[[int]$kv[0]]=[long]$kv[1]}}
-        }
+        $script:QpCounts=ConvertTo-QuantizerHistogram $script:SliceQpDiagnostic.Histogram
     }
     Render
     Render-QpHistogram
