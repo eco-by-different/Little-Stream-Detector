@@ -1,96 +1,114 @@
+# Little Stream Detector (LSD)
+
 ![Repo size](https://img.shields.io/github/repo-size/eco-by-different/Little-Stream-Detector)
 ![Last commit](https://img.shields.io/github/last-commit/eco-by-different/Little-Stream-Detector)
 
-# Little Stream Detector (LSD)
+Little Stream Detector (LSD) is a lightweight, portable video stream analyzer for Windows.
 
-Little Stream Detector (LSD) is a lightweight and portable video stream analyzer for Windows.
+LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, and AV1 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and I/P/B frame analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
 
-LSD performs native Matroska, WebM, MP4, M4V, MOV, AVI parsing and native XviD, AVC/H.264, HEVC/H.265 and AV1 bitstream analysis. It provides frame-level QP/DRF statistics, DRF distribution, GOP and I/P/B frame analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
+Version 3.0 adds direct comparison of a current encode against a saved reference. The application can display both bitrate profiles and DRF/QP distributions in a shared view while preserving separate reports for the current file and the reference file.
 
-The application does not use FFmpeg, FFprobe, MediaInfo, or other external multimedia tools. Video files are read and analyzed without decoding, modification, or transcoding.
+LSD does not use FFmpeg, FFprobe, MediaInfo, or other external multimedia tools. Video files are read and analyzed without decoding, modification, or transcoding.
 
----
 ## Screenshot
 
-![lsd-gui.png](lsd-gui.png)
+![Little Stream Detector 3.0](lsd-gui.png)
 
 ---
-# Antivirus Notice (False Positives)
-The `.exe` binary is generated, which some sensitive antivirus engines, including Windows Defender or machine-learning based scanners, may flag as a false positive.
+## Antivirus Notice
 
-The underlying PowerShell script is clean. If your system blocks the `.exe`, you can safely run the raw `LSD.ps1` script instead.
+The compiled `.exe` is generated from the PowerShell source. Some sensitive antivirus engines, including Windows Defender or machine-learning-based scanners, may report a false positive.
+
+The readable PowerShell source is included. If the executable is blocked, use `LSD.ps1` instead and review the source before running it.
 
 ---
-## Usage
 
-1. Run `LSD.exe`.
-2. Drag a video file into the application window, or click **Open video**.
-3. Wait for the native analysis to complete.
-4. Use **Copy** to copy the generated report.
-
-No installation or administrator privileges are required.
-
-## Running the PowerShell source
+## Running the PowerShell Source
 
 If `LSD.ps1` was downloaded from the Internet, Windows may block it.
 
-Right-click `LSD.ps1`, select **Properties**, check **Unblock**, and click **Apply**. The script can then be started using **Run with PowerShell**.
+1. Right-click `LSD.ps1`.
+2. Select **Properties**.
+3. Check **Unblock**.
+4. Click **Apply**.
+5. Start the script using **Run with PowerShell**.
 
-Alternatively, unblock the downloaded ZIP file before extracting it. This prevents the extracted files from inheriting the Internet security marker.
+Alternatively, unblock the downloaded ZIP archive before extracting it. This prevents extracted files from inheriting the Internet security marker.
 
 This step is not required for the compiled executable.
+
+## Download
+
+Use the files from the latest `3.0` release:
+
+- `LSD.exe` for normal use
+- `LSD.ps1` as the readable PowerShell source
+- the technical documentation for implementation details and supported analysis paths
+
+No installation or administrator privileges are required.
+
+## Usage
+
+1. Run `LSD.exe`, or start `LSD.ps1` with PowerShell.
+2. Drag a video file into the application window, or click **Open video**.
+3. Wait for the native analysis to complete. The loaded file is shown as **A Current** in blue.
+4. Click **Set Ref B** to store the current analysis as **B Reference** in gold.
+5. Load another file to compare the new **A Current** against the saved **B Reference**.
+6. Click **Remove Ref B** to remove the reference while keeping the current A result. If only B remains, removing B resets the application to its initial state.
+7. Use **Summary A** and **Summary B** to review the reports independently.
+8. Use **Copy** to copy the current analysis report.
+
+For meaningful timeline comparison, A and B should represent time-aligned versions of the same source. Resolution, bitrate, file size, encoder settings, and quality parameters may differ.
+
+## A Current and B Reference
+
+LSD 3.0 uses a simple two-result model:
+
+- **A Current** is the most recently analyzed file and is shown in blue.
+- **B Reference** is the saved comparison result and is shown in gold.
+- **Set Ref B** converts the current A result into the B reference.
+- Loading another file creates a new A result while preserving B.
+- **Remove Ref B** removes only B when A and B are present.
+- Removing B when no A is present resets the interface to its startup state.
+
+The comparison view includes:
+
+- a shared bitrate profile using a common vertical scale
+- blue A Current and gold B Reference legends
+- frame-level DRF/QP distribution comparison
+- shared DRF/QP scaling and aligned quantizer values
+- separate **Summary A** and **Summary B** report tabs
+
+The bitrate timeline is normalized to the duration of each file. Comparison is intended for time-aligned encodes of the same content.
 
 ## System Requirements
 
 - Windows 10 or Windows 11
+- PowerShell 5.1 or later when using `LSD.ps1`
 - 64-bit Windows recommended
 
----
-## What's New in 2.0
+## What's New in 3.0
 
-- Added native support for Matroska/WebM, AVI, and unfragmented MP4/M4V/MOV containers.
-- Added native AVI 1.0 and OpenDML AVI 2.0 parsing, including multi-segment `AVIX` files.
-- Added native OpenDML standard index processing with legacy `idx1` fallback.
-- Added native H.264/AVC, H.265/HEVC, AV1, and MPEG-4 Part 2/XviD bitstream analysis.
-- Added native H.264/AVC Annex B support for AVI, including SPS and PPS discovery from video samples.
-- Added native AAC, MP3, PCM, AC-3, and E-AC-3 audio analysis.
-- Added integer and floating-point PCM detection, sample accounting, block-alignment validation, decoded-duration calculation, and exact bitrate reporting.
-- Added AAC-LC, HE-AAC, and HE-AACv2 configuration detection.
-- Added MPEG Audio frame validation, decoded-duration accounting, and exact MP3 bitrate calculation.
-- Added Dolby syncframe validation, decoded-duration accounting, and exact AC-3/E-AC-3 bitrate calculation.
-- Added frame-level AV1 analysis, including frame types, hidden frames, `show_existing_frame`, and Base Q Index statistics.
-- Added native MPEG-4 Part 2/XviD VOP analysis, including I/P/B picture detection and VOP quantizer statistics.
-- Added native `avcC`, `hvcC`, `av1C`, AAC `AudioSpecificConfig`, `dac3`, and `dec3` parsing.
-- Added support for QuickTime audio sample entry versions 0, 1, and 2.
-- Added native MP4/MOV audio support for AAC, MP3, PCM, AC-3, and E-AC-3.
-- Added native AVI audio support for MP3, PCM, and AC-3.
-- Added native Matroska PCM support for little-endian integer, big-endian integer, and IEEE floating-point audio.
-- Added container metadata detection for Matroska, AVI, MP4, and MOV.
-- Introduced a shared, container-independent canonical media analysis pipeline.
-- Added canonical video and audio sample indexes with sample accounting and validation.
-- Improved MP4/MOV loading performance and GUI responsiveness.
-- Fixed AVI bitrate profile generation and zero-length index entry handling.
-- Fixed OpenDML and legacy AVI index deduplication.
-- Fixed HEVC B-frame QP analysis without weighted biprediction.
-- Improved reporting of unavailable, unsignaled, or non-applicable metadata.
-- Removed obsolete development and validation code.
+- Added the **A Current / B Reference** comparison model.
+- Added **Set Ref B** and **Remove Ref B** controls.
+- Added simultaneous blue A and gold B bitrate profiles with a shared scale.
+- Added a clear in-graph legend for A Current and B Reference.
+- Added comparative DRF, SliceQPY, AV1 Base Q Index, and MPEG-4 VOP quantizer distributions.
+- Added a compact shared quantizer range from the lowest non-zero A/B value minus one to the highest non-zero A/B value plus one.
+- Added side-by-side quantizer percentages for A and B.
+- Added separate **Summary A** and **Summary B** views.
+- Added automatic reset to the startup state when the last remaining reference is removed.
+- Preserved the native, container-independent analysis pipeline introduced in version 2.0.
 - No external multimedia tools or temporary files are required.
 
-### Known Limitations
-
-- Fragmented MP4 files using `moof`, `traf`, and `trun` are not supported in version 2.0.
-- AVI H.264/AVC support is intended for Annex B streams. AVI files using unusual length-prefixed AVC storage may not be supported.
-- AVI files containing AAC or E-AC-3 audio are not currently supported.
-- Container-only color metadata such as MP4 `colr`/`nclx` or Matroska `Colour` elements is not currently used as a fallback.
-- Some metadata may be shown as `N/A` when it is not explicitly present in the container or codec bitstream.
-
-## Features
+## Analysis Features
 
 ### Containers
 
 - Native Matroska and WebM parsing
 - Native AVI 1.0 and OpenDML AVI 2.0 parsing
-- Native multi-segment `AVIX` processing
+- Native multi-segment AVIX processing
 - Native AVI `idx1` sample indexing
 - Native OpenDML `ix##` standard index processing
 - Automatic OpenDML index preference with legacy `idx1` fallback
@@ -135,12 +153,12 @@ This step is not required for the compiled executable.
 - Signed integer PCM analysis
 - IEEE floating-point PCM analysis
 - Little-endian and big-endian PCM detection
-- Native AVI PCM parsing through `WAVEFORMATEX` and supported extensible format parameters
+- Native AVI PCM parsing through WAVEFORMATEX and supported extensible format parameters
 - Native Matroska PCM parsing for `A_PCM/INT/LIT`, `A_PCM/INT/BIG`, and `A_PCM/FLOAT/IEEE`
 - Native MOV/ISO Media PCM parsing for supported `sowt`, `twos`, `in24`, `in32`, `fl32`, `fl64`, and `lpcm` sample entries
 - Native `AudioSpecificConfig`, `dac3`, and `dec3` parsing
 - Sample rate, channel count, and channel layout reporting
-- PCM bit-depth, endianness, sample format, and block-alignment reporting
+- PCM bit depth, endianness, sample format, and block-alignment reporting
 - Canonical audio sample accounting
 - Rejected-sample and first-failure reporting
 - Codec-derived decoded-duration calculation
@@ -151,14 +169,24 @@ This step is not required for the compiled executable.
 ### Interface and Reports
 
 - Video and audio stream information
-- Summary, Streams, JSON, and Log views
-- Bitrate profile graph
-- DRF, QP, Base Q Index, and VOP quantizer histograms
+- **Summary A**, **Summary B**, **Streams**, **JSON**, and **Log** views
+- Comparative bitrate profile graph
+- Comparative DRF, QP, Base Q Index, and VOP quantizer distributions
 - File selection and drag-and-drop support
 - Responsive background metadata preparation and analysis
 - Copyable analysis reports
 - Explicit reporting of unavailable or unsignaled values as `N/A`
 - No external multimedia tools or temporary files
+
+## Known Limitations
+
+- Fragmented MP4 files using `moof`, `traf`, and `trun` are not supported.
+- AVI H.264/AVC support is intended for Annex B streams. AVI files using unusual length-prefixed AVC storage may not be supported.
+- AVI files containing AAC or E-AC-3 audio are not currently supported.
+- Container-only color metadata such as MP4 `colr`/`nclx` or Matroska `Colour` elements is not currently used as a fallback.
+- Some metadata may be shown as `N/A` when it is not explicitly present in the container or codec bitstream.
+- Bitrate comparison assumes that A and B are time-aligned versions of the same content.
+- Quantizer distributions are directly comparable only when A and B use the same quantizer metric.
 
 ## License
 
@@ -166,4 +194,4 @@ Little Stream Detector is licensed under the GNU General Public License v3.0.
 
 You may use, study, modify, and redistribute the software under the terms of the GPL-3.0 license. Distributed modified versions must provide the corresponding source code and remain licensed under GPL-3.0.
 
-See the LICENSE file for the complete license terms.
+See the `LICENSE` file for the complete license terms.
