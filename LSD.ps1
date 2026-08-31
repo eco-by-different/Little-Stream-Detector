@@ -638,7 +638,7 @@ function Render-QpHistogram {
     $a=if($hasA){Get-QpStats $script:QpCounts}else{$null};$b=if($hasB){Get-QpStats $script:ReferenceResult.QpCounts}else{$null}
     if($a-and$b){$qpStatsText.Lines=@(('A Frames: {0,-8:N0} | B Frames: {1:N0}'-f$a.Total,$b.Total),('A Avg:    {0,-8:N1} | B Avg:    {1:N1}'-f$a.Avg,$b.Avg),('A Median: {0,-8} | B Median: {1}'-f$a.Median,$b.Median),('A Mode:   {0,-8} | B Mode:   {1}'-f$a.Mode,$b.Mode),('A Range:  {0,-8} | B Range:  {1}'-f($a.Min.ToString()+'-'+$a.Max),($b.Min.ToString()+'-'+$b.Max)))}
     else{$x=if($a){$a}else{$b};$tag=if($a){'A'}else{'B'};if($x){$qpStatsText.Lines=@(($tag+' Frames: '+('{0:N0}'-f$x.Total)),($tag+' Avg:    '+('{0:N1}'-f$x.Avg)),($tag+' Median: '+$x.Median),($tag+' Mode:   '+$x.Mode),($tag+' Range:  '+$x.Min+'-'+$x.Max))}else{$qpStatsText.Lines=@('Frames: N/A','Avg: N/A','Median: N/A','Mode: N/A','Range: N/A')}}
-    $values=@();if($a){$values+=@($a.Items.Q)};if($b){$values+=@($b.Items.Q)};$values=@($values|Sort-Object -Unique);$keys=@();if($values.Count-gt0){$first=[int]$values[0]-1;$last=[int]$values[-1]+1;$keys=@($first..$last)};$qpText.Tag=[pscustomobject]@{A=$a;B=$b;Keys=$keys};$qpText.AutoScrollMinSize=New-Object Drawing.Size(0,[Math]::Max(0,$keys.Count*22+24));$qpText.Invalidate()
+    $values=@();if($a){$values+=@($a.Items.Q)};if($b){$values+=@($b.Items.Q)};$values=@($values|Sort-Object -Unique);$keys=@();if($values.Count-gt0){$first=[Math]::Max(0,[int]$values[0]-1);$last=[int]$values[-1]+1;$keys=@($first..$last)};$qpText.Tag=[pscustomobject]@{A=$a;B=$b;Keys=$keys};$qpText.AutoScrollMinSize=New-Object Drawing.Size(0,[Math]::Max(0,$keys.Count*22+24));$qpText.Invalidate()
 }
 function Render {
     if($null -eq $script:Meta) { $summary.Clear(); return }
