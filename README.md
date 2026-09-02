@@ -5,7 +5,7 @@
 
 Little Stream Detector (LSD) is a lightweight, portable video stream analyzer for Windows.
 
-LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, and AV1 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and I/P/B frame analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
+LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, VP9, and AV1 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and I/P/B frame analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
 
 Version 3.0 adds direct comparison of a current encode against a saved reference. The application can display both bitrate profiles and DRF/QP distributions in a shared view while preserving separate reports for the current file and the reference file.
 
@@ -140,6 +140,34 @@ The bitrate timeline is normalized to the duration of each file. Comparison is i
 - Native MPEG-4 Part 2 VOP quantizer analysis
 - Quantizer distribution histograms
 - Packet-to-frame consistency validation
+- Codec-derived color metadata for AVC, HEVC, and AV1
+
+### Video Analysis
+
+- H.264/AVC analysis
+- H.265/HEVC analysis
+- AV1 analysis
+- VP9 analysis
+- MPEG-4 Part 2/XviD analysis
+- AVC configuration parsing from avcC
+- AVC Annex B parsing with SPS/PPS discovery
+- HEVC configuration parsing from hvcC
+- AV1 configuration parsing from av1C
+- VP9 uncompressed frame header analysis
+- VP9 superframe detection and internal frame traversal
+- MPEG-4 Visual Object Layer and VOP header analysis
+- I, P, and B picture detection
+- VP9 KEY and INTER frame detection
+- Hidden and shown frame event analysis for AV1 and VP9
+- Keyframe and GOP structure analysis
+- Packet size and bitrate profile analysis
+- Native frame-level AVC and HEVC SliceQPY/DRF analysis
+- Native AV1 Base Q Index analysis
+- Native VP9 Base Q Index analysis
+- Native MPEG-4 Part 2 VOP quantizer analysis
+- Quantizer distribution histograms
+- Packet-to-frame consistency validation
+- Internal frame and superframe accounting validation
 - Codec-derived color metadata for AVC, HEVC, and AV1
 
 ### Audio Analysis
