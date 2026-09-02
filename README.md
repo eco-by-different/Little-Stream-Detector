@@ -128,10 +128,11 @@ The bitrate timeline is normalized to the duration of each file. Comparison is i
 - AV1 analysis
 - VP9 analysis
 - MPEG-4 Part 2/XviD analysis
-- AVC configuration parsing from avcC
+- AVC configuration parsing from `avcC`
 - AVC Annex B parsing with SPS/PPS discovery
-- HEVC configuration parsing from hvcC
-- AV1 configuration parsing from av1C
+- HEVC configuration parsing from `hvcC`
+- AV1 configuration parsing from `av1C`
+- VP9 analysis in Matroska/WebM and standard non-fragmented MP4/MOV
 - VP9 uncompressed frame header analysis
 - VP9 superframe detection and internal frame traversal
 - MPEG-4 Visual Object Layer and VOP header analysis
@@ -146,7 +147,7 @@ The bitrate timeline is normalized to the duration of each file. Comparison is i
 - Native MPEG-4 Part 2 VOP quantizer analysis
 - Quantizer distribution histograms
 - Packet-to-frame consistency validation
-- Internal frame and superframe accounting validation
+- VP9 superframe and internal-frame accounting validation
 - Codec-derived color metadata for AVC, HEVC, and AV1
 
 ### Audio Analysis
