@@ -1073,7 +1073,7 @@ function Finish-Scan([string]$value,$bins) {
 }
 function Cancel{$script:Cancelled=$true;$script:ScanPhase='idle';if($script:Mp4PrepJob){$script:Mp4PrepJob.Cancel()};if($script:ScanJob){$script:ScanJob.Cancel()}}
 
-$toolTip=New-Object Windows.Forms.ToolTip;$toolTip.SetToolTip($open,'Native Matroska/WebM, AVI, and MP4/M4V/MOV analysis. No external multimedia engine is used.')
+$toolTip=New-Object Windows.Forms.ToolTip;$toolTip.SetToolTip($open,'Native Matroska/WebM, AVI, and MP4/M4V/MOV analysis. No external multimedia engine is used.');$script:BitrateTipIndex=-1;$toolTip.AutoPopDelay=10000;$toolTip.InitialDelay=150;$toolTip.ReshowDelay=50;$toolTip.ShowAlways=$true
 $chart.Add_Paint({
     param($sender,$e)
     $g=$e.Graphics;$g.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::None
@@ -1160,11 +1160,30 @@ $timer.Add_Tick({
     }
 })
 $timer.Start()
+$chart.Add_MouseMove({
+    param($sender,$e)
+    $a=@($script:BitrateBins);$b=if($script:ReferenceResult){@($script:ReferenceResult.BitrateBins)}else{@()}
+    $count=[Math]::Max($a.Count,$b.Count);$width=$sender.ClientSize.Width
+    if($count-lt1-or$width-lt4){if($script:BitrateTipIndex-ne-1){$toolTip.Hide($sender);$script:BitrateTipIndex=-1};return}
+    $plotWidth=[Math]::Max(1,$width-3);$mouseX=[Math]::Max(0,[Math]::Min($plotWidth,$e.X));$index=[Math]::Min($count-1,[int][Math]::Floor(($mouseX*$count)/[double]$plotWidth))
+    if($index-eq$script:BitrateTipIndex){return};$script:BitrateTipIndex=$index
+    $duration=if($script:ReferenceOnlyView-and$script:ReferenceResult.Duration){[double]$script:ReferenceResult.Duration}else{[double]$script:Duration}
+    if($duration-le0){$duration=[double]$count};$bucket=$duration/$count;$start=$index*$bucket;$end=[Math]::Min($duration,($index+1)*$bucket);$seconds=[Math]::Max(0.001,$end-$start)
+    $time={param([double]$v)$t=[TimeSpan]::FromSeconds([Math]::Max(0,$v));if($t.TotalHours-ge1){'{0:00}:{1:00}:{2:00}'-f[Math]::Floor($t.TotalHours),$t.Minutes,$t.Seconds}else{'{0:00}:{1:00}'-f[Math]::Floor($t.TotalMinutes),$t.Seconds}}
+    $rate={param([double]$bytes)Rate ($bytes*8.0/$seconds)}
+    $interval='Time interval: '+(& $time $start)+' - '+(& $time $end)
+    $hasA=(-not $script:ReferenceOnlyView)-and($index-lt$a.Count);$hasB=$index-lt$b.Count
+    if($hasA-and$hasB){$line='A / B bitrate: '+(& $rate ([double]$a[$index]))+' | '+(& $rate ([double]$b[$index]))}
+    elseif($hasA){$line='A bitrate: '+(& $rate ([double]$a[$index]))}
+    elseif($hasB){$line='B bitrate: '+(& $rate ([double]$b[$index]))}else{$toolTip.Hide($sender);return}
+    $tipX=[Math]::Max(4,[Math]::Min([Math]::Max(4,$width-260),$e.X+14));$toolTip.Show($interval+[Environment]::NewLine+$line,$sender,$tipX,[Math]::Max(4,$e.Y-42),10000)
+})
+$chart.Add_MouseLeave({$toolTip.Hide($chart);$script:BitrateTipIndex=-1})
 $form.Add_SizeChanged({if($chart.IsHandleCreated){$chart.BeginInvoke([Action]{if(-not $chart.IsDisposed){$chart.Invalidate($true);$chart.Refresh()}})|Out-Null}})
 $form.Add_ResizeEnd({if(-not $chart.IsDisposed){$chart.Invalidate($true);$chart.Refresh()}})
 function Pick{$d=New-Object Windows.Forms.OpenFileDialog;$d.Filter='Video files|*.avi;*.mkv;*.mp4;*.m4v;*.mov;*.webm;*.ts;*.m2ts;*.mpg;*.mpeg;*.vob;*.wmv;*.flv;*.ogv;*.264;*.h264;*.265;*.h265;*.hevc|All files|*.*';if($d.ShowDialog() -eq 'OK'){Start-Meta $d.FileName};$d.Dispose()}
 function Update-ReferenceUi {$has=$null-ne$script:ReferenceResult;$reference.Text=if($has){'Remove Ref B'}else{'Set Ref B'};$reference.Enabled=($has-or$script:BitrateBins.Count-gt1);$chartBox.Text=if($has-and$script:ReferenceOnlyView){'Bitrate profile - B reference'}elseif($has){'Bitrate profile - A current / B reference'}else{'Bitrate profile'};$chart.Invalidate();Render-QpHistogram}
-function Set-ReferenceB {if($script:BitrateBins.Count-lt2){return};$qp=@{};foreach($k in $script:QpCounts.Keys){$qp[$k]=$script:QpCounts[$k]};$script:ReferenceResult=[pscustomobject]@{BitrateBins=@($script:BitrateBins);QpMode=$script:QpMode;QpCounts=$qp;SummaryText=[string]$summary.Text};$summaryRef.Text=[string]$script:ReferenceResult.SummaryText;if(-not $tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.Insert(1,$summaryRefPage)};$script:ReferenceOnlyView=$true;Update-ReferenceUi;$status.Text=('Reference B set: '+[IO.Path]::GetFileName($script:File))}
+function Set-ReferenceB {if($script:BitrateBins.Count-lt2){return};$qp=@{};foreach($k in $script:QpCounts.Keys){$qp[$k]=$script:QpCounts[$k]};$script:ReferenceResult=[pscustomobject]@{BitrateBins=@($script:BitrateBins);Duration=[double]$script:Duration;QpMode=$script:QpMode;QpCounts=$qp;SummaryText=[string]$summary.Text};$summaryRef.Text=[string]$script:ReferenceResult.SummaryText;if(-not $tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.Insert(1,$summaryRefPage)};$script:ReferenceOnlyView=$true;Update-ReferenceUi;$status.Text=('Reference B set: '+[IO.Path]::GetFileName($script:File))}
 function Remove-ReferenceB {$onlyB=$script:ReferenceOnlyView;if($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage'){$tabs.SelectedIndex=0};if($tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.RemoveByKey('SummaryBPage')};$summaryRef.Clear();$script:ReferenceResult=$null;$script:ReferenceOnlyView=$false;if($onlyB){$script:File='';$script:Meta=$null;$script:Duration=0;$script:PacketResult=$null;$script:FrameResult=$null;$script:BitrateBins=@();$script:QpCounts=@{};$summary.Clear();$json.Clear();$log.Clear();$grid.DataSource=$null;$fileText.Text='Drop a video or click Open video.';$copy.Enabled=$false;$status.Text='Ready'}else{$status.Text='Reference B removed'};Update-ReferenceUi}
 $open.Add_Click({Pick});$cancel.Add_Click({Cancel});$copy.Add_Click({$isRef=($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage');$copyText=if($isRef){[string]$summaryRef.Text}else{[string]$summary.Text};if(-not[string]::IsNullOrWhiteSpace($copyText)){[Windows.Forms.Clipboard]::SetText($copyText);$status.Text=if($isRef){'Reference B report copied'}else{'Current A report copied'}}});$reference.Add_Click({if($script:ReferenceResult){Remove-ReferenceB}else{Set-ReferenceB}})
 $dragEnter={if($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){$_.Effect='Copy'}else{$_.Effect='None'}};$dragDrop={$f=$_.Data.GetData([Windows.Forms.DataFormats]::FileDrop);if($f.Count){Start-Meta $f[0]}};$form.Add_DragEnter($dragEnter);$form.Add_DragDrop($dragDrop);$drop.Add_DragEnter($dragEnter);$drop.Add_DragDrop($dragDrop);$form.Add_KeyDown({if($_.KeyCode -eq 'Escape'){Cancel}elseif($_.Control-and$_.KeyCode -eq 'O'){Pick}});$form.Add_FormClosing({Cancel;$timer.Stop();if($script:Mp4PrepJob){$script:Mp4PrepJob.Dispose()};if($script:ScanJob){$script:ScanJob.Dispose()};[Threading.Thread]::CurrentThread.CurrentCulture=$script:OriginalCulture;[Threading.Thread]::CurrentThread.CurrentUICulture=$script:OriginalCulture});[void]$form.ShowDialog()
