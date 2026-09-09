@@ -79,15 +79,32 @@ The comparison view includes:
 ### What's New in 3.0
 
 - Added the **A Current / B Reference** comparison model.
-- Added simultaneous A/B bitrate profiles with a shared scale.
-- Added an interactive bitrate tooltip showing the selected time interval and A/B bitrate values.
-- Added comparative SliceQPY, AV1/VP8/VP9 Base Q Index, and MPEG-4 VOP quantizer distributions.
-- Added native VP8 analysis for Matroska/WebM.
-- Added native VP9 analysis for Matroska/WebM and standard non-fragmented MP4/MOV through `vp09`.
-- Added VP9 superframe traversal and hidden/shown frame accounting.
+- Added **Set Ref B** and **Remove Ref B** controls.
+- Added simultaneous blue A and gold B bitrate profiles with a shared scale.
+- Added a clear in-graph legend for A Current and B Reference.
+- Added an interactive mouse-hover tooltip to the bitrate graph.
+- Added time-interval and A/B bitrate reporting for individual bitrate buckets.
+- Added comparative DRF, SliceQPY, AV1 Base Q Index, VP8 Base Q Index, VP9 Base Q Index, and MPEG-4 VOP quantizer distributions.
+- Added a compact shared quantizer range from the lowest non-zero A/B value minus one to the highest non-zero A/B value plus one, clamped to the valid range of the active codec metric.
+- Added side-by-side quantizer percentages for A and B.
+- Added separate **Summary A** and **Summary B** views.
+- Added automatic reset to the startup state when the last remaining reference is removed.
+- Added native VP8 frame-header and Base Q Index analysis for Matroska/WebM.
+- Added native VP9 uncompressed-frame-header and Base Q Index analysis.
+- Added VP9 superframe detection and internal-frame traversal.
+- Added VP9 hidden, shown, and show-existing frame accounting.
+- Added VP9 support for Matroska/WebM and standard non-fragmented MP4/M4V/MOV through the `vp09` sample entry.
+- Added AV1 multi-tile frame-header traversal for native frame-level Base Q Index analysis.
+- Added expanded MPEG-4 Part 2/XviD analysis, including GMC/S-VOP handling.
 - Added native fragmented MP4 sample indexing as an isolated MP4 sub-route using `mvex/trex` and `moof/traf/tfhd/tfdt/trun`.
-- Preserved the existing conventional MP4 sample-table path unchanged.
-- Consolidated common deterministic statistic and histogram formatting helpers without changing codec parser behavior.
+- Added fragment-level resolution of sample offsets, sizes, durations, flags, DTS, PTS, and composition-time offsets.
+- Reused the existing codec, audio, bitrate, tooltip, report, and A/B layers for fragmented MP4 after canonical samples are created.
+- Preserved the existing conventional MP4 sample-table path without modification.
+- Added codec-specific completeness and accounting validation for AV1, VP8, and VP9.
+- Added first-failure and rejected-header diagnostics for the new native parser paths.
+- Consolidated common deterministic statistic calculations and histogram serialization without changing codec parser behavior.
+- Preserved the native, container-independent canonical analysis pipeline introduced in version 2.0.
+- No external multimedia tools or temporary files are required.
 
 ### Analysis Features
 
