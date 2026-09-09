@@ -175,14 +175,15 @@ The branch reuses the existing codec and audio analyzers after canonical samples
 
 ### Known Limitations
 
-- The fragmented MP4 branch does not support encrypted CENC samples or auxiliary encryption structures such as `senc`, `saiz`, and `saio`.
-- Standalone media segments without an initialization `moov` box are not supported.
+- The fragmented MP4 branch supports standard unencrypted files containing an initialization moov box and media fragments described by moof, traf, tfhd, tfdt, and trun.
+- Encrypted CENC samples and auxiliary encryption structures such as senc, saiz, and saio are not supported.
+- Standalone media segments without an initialization moov box are not supported.
 - Incomplete files that are still being written and live network streams are not supported.
 - VP8 is supported only in Matroska/WebM. VP8 in MP4/MOV and AVI is intentionally not enabled.
 - VP9 in AVI is not supported.
 - AVI H.264/AVC support is intended for Annex B streams.
 - AVI files containing AAC or E-AC-3 audio are not currently supported.
-- Container-only color metadata such as MP4 `colr/nclx` or Matroska `Colour` is not currently used as a fallback.
+- Container-only color metadata, such as MP4 colr/nclx or Matroska Colour, is not currently used as a fallback.
 - Quantizer distributions are directly comparable only when A and B use the same quantizer metric.
 
 ### License
