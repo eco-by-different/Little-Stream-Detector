@@ -184,7 +184,6 @@ The branch reuses the existing codec and audio analyzers after canonical samples
 - AVI files containing AAC or E-AC-3 audio are not currently supported.
 - Container-only color metadata such as MP4 `colr/nclx` or Matroska `Colour` is not currently used as a fallback.
 - Quantizer distributions are directly comparable only when A and B use the same quantizer metric.
-- The current fragmented MP4 implementation should be considered newly implemented until it has completed regression testing against the retained fMP4 sample and a losslessly remuxed conventional MP4 reference.
 
 ### License
 
