@@ -5,7 +5,7 @@
 
 Little Stream Detector (LSD) is a lightweight, portable video stream analyzer for Windows.
 
-LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, AV1, VP8, and VP9 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and frame-type analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
+LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, VVC/H.266, AV1, VP8, and VP9 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and frame-type analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
 
 Version 3.0 adds direct comparison of a current encode against a saved reference. The application can display both bitrate profiles and compatible DRF/QP distributions in a shared view while preserving separate reports for the current file and the reference file.
 
@@ -102,6 +102,8 @@ The comparison view includes:
 - Preserved the existing conventional MP4 sample-table path without modification.
 - Added codec-specific completeness and accounting validation for AV1, VP8, and VP9.
 - Added first-failure and rejected-header diagnostics for the new native parser paths.
+- Added native VVC/H.266 analysis using a two-pass **Collect -> Resolve -> Validate -> Publish** model.
+- Added VVC Picture Header and Slice Header traversal, native I/P/B accounting, frame-level SliceQPY, and pixel-format derivation from SPS chroma format and bit depth.
 - Consolidated common deterministic statistic calculations and histogram serialization without changing codec parser behavior.
 - Preserved the native, container-independent canonical analysis pipeline introduced in version 2.0.
 - No external multimedia tools or temporary files are required.
@@ -124,17 +126,21 @@ The comparison view includes:
 
 - H.264/AVC analysis
 - H.265/HEVC analysis
+- H.266/VVC two-pass analysis for supported length-prefixed streams
 - AV1 analysis, including multi-tile frame headers
 - VP8 analysis in Matroska/WebM
 - VP9 analysis in Matroska/WebM and standard non-fragmented MP4/MOV
 - MPEG-4 Part 2/XviD analysis, including GMC/S-VOP handling
 - AVC configuration parsing from `avcC` and Annex B SPS/PPS discovery
 - HEVC configuration parsing from `hvcC`
+- VVC configuration and SPS/PPS context parsing from `vvcC`
 - AV1 configuration parsing from `av1C`
 - VP8 frame-tag and boolean-coded first-partition traversal
 - VP9 uncompressed-frame-header and superframe traversal
 - I/P/B, KEY/INTER, hidden, shown, and show-existing frame accounting where applicable
 - Native frame-level AVC and HEVC SliceQPY analysis
+- Native frame-level VVC SliceQPY analysis with complete-picture validation
+- Native pixel-format reporting from codec chroma format and bit depth where available
 - Native AV1, VP8, and VP9 Base Q Index analysis
 - Native MPEG-4 Part 2 VOP quantizer analysis
 - Quantizer distribution histograms and completeness validation
@@ -184,6 +190,7 @@ The branch reuses the existing codec and audio analyzers after canonical samples
 - AVI H.264/AVC support is intended for Annex B streams.
 - AVI files containing AAC or E-AC-3 audio are not currently supported.
 - Container-only color metadata, such as MP4 colr/nclx or Matroska Colour, is not currently used as a fallback.
+- VVC results are published only after complete two-pass validation; unsupported VVC syntax paths are rejected rather than estimated.
 - Quantizer distributions are directly comparable only when A and B use the same quantizer metric.
 
 ### License
