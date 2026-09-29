@@ -74,6 +74,7 @@ The comparison view includes:
 - an interactive time-and-bitrate tooltip
 - blue A Current and gold B Reference legends
 - compatible frame-level DRF/QP distribution comparison
+- optional **Relative Q view** for A/B comparisons maps otherwise incompatible native quantizer metrics to separate codec-local 0–100% scales; it compares distribution shape, not equivalent visual quality
 - separate **Summary A** and **Summary B** report tabs
 
 ### What's New in 3.0

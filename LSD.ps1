@@ -750,7 +750,7 @@ $ErrorActionPreference = 'Stop'
     param($sender,$eventArgs)
     [Windows.Forms.MessageBox]::Show("LSD runtime error.`r`n`r`n$($eventArgs.Exception.Message)",'LSD error') | Out-Null
 })
-$Version='3.0';$script:Build='3.0 - Reference stream comparison';$script:ScanJob=$null;$script:ScanPhase='idle';$script:Cancelled=$false;$script:File='';$script:Meta=$null;$script:NativeInfo=$null;$script:ReadyMedia=$null;$script:ReadyTrack=$null;$script:ReadyModelStatus='Not built';$script:Mp4Probe=$null;$script:AviProbe=$null;$script:Mp4PrepJob=$null;$script:PacketEngine='';$script:Duration=0;$script:PacketResult=$null;$script:FrameResult=$null;$script:BitrateBins=@();$script:QpCounts=@{};$script:QpMode='SliceQPY';$script:QpDecoderState=New-Object H264QpValidationState;$script:SliceQpDiagnostic=$null;$script:HevcDiagnostic=$null;$script:VvcDiagnostic=$null;$script:Av1Diagnostic=$null;$script:Vp8Diagnostic=$null;$script:Vp9Diagnostic=$null;$script:Mpeg4Diagnostic=$null;$script:AudioDiagnostic=$null;$script:NativeHevcQpDiagnostic=$null;$script:StageStarted=[DateTime]::MinValue;$script:ReferenceResult=$null;$script:ReferenceOnlyView=$false;$script:QpShowCounts=$false;$script:QpHeaderHover=$false
+$Version='3.0';$script:Build='3.0 - Reference stream comparison';$script:ScanJob=$null;$script:ScanPhase='idle';$script:Cancelled=$false;$script:File='';$script:Meta=$null;$script:NativeInfo=$null;$script:ReadyMedia=$null;$script:ReadyTrack=$null;$script:ReadyModelStatus='Not built';$script:Mp4Probe=$null;$script:AviProbe=$null;$script:Mp4PrepJob=$null;$script:PacketEngine='';$script:Duration=0;$script:PacketResult=$null;$script:FrameResult=$null;$script:BitrateBins=@();$script:QpCounts=@{};$script:QpMode='SliceQPY';$script:QpDecoderState=New-Object H264QpValidationState;$script:SliceQpDiagnostic=$null;$script:HevcDiagnostic=$null;$script:VvcDiagnostic=$null;$script:Av1Diagnostic=$null;$script:Vp8Diagnostic=$null;$script:Vp9Diagnostic=$null;$script:Mpeg4Diagnostic=$null;$script:AudioDiagnostic=$null;$script:NativeHevcQpDiagnostic=$null;$script:StageStarted=[DateTime]::MinValue;$script:ReferenceResult=$null;$script:ReferenceOnlyView=$false;$script:QpShowCounts=$false;$script:QpHeaderHover=$false;$script:TopChartMode='Bitrate';$script:RelativeQCache=$null
 function Q([string]$s){'"'+($s-replace '(\\*)"','$1$1\"'-replace'(\\+)$','$1$1')+'"'}
 function NA($v){if($null -eq $v -or [string]::IsNullOrWhiteSpace([string]$v)){'N/A'}else{[string]$v}}
 function Bytes([long]$n){$u='B','KiB','MiB','GiB','TiB';$v=[double]$n;$i=0;while($v -ge 1024 -and $i -lt 4){$v/=1024;$i++};'{0:N2} {1}'-f$v,$u[$i]}
@@ -766,6 +766,25 @@ function Get-QpStats($map){
     if($null-eq$map-or$map.Count-eq0){return $null};$items=@($map.GetEnumerator()|ForEach-Object{[pscustomobject]@{Q=[int]$_.Key;N=[long]$_.Value}}|Where-Object{$_.N-gt0}|Sort-Object Q);if($items.Count-eq0){return $null}
     [long]$total=($items|Measure-Object N -Sum).Sum;[double]$sum=0;foreach($i in $items){$sum+=$i.Q*$i.N};$half=[Math]::Ceiling($total/2.0);[long]$run=0;$median=$items[0].Q;foreach($i in $items){$run+=$i.N;if($run-ge$half){$median=$i.Q;break}};$mode=($items|Sort-Object N -Descending|Select-Object -First 1).Q
     [pscustomobject]@{Total=$total;Avg=$sum/$total;Median=$median;Mode=$mode;Min=$items[0].Q;Max=$items[-1].Q;Items=$items}
+}
+function Get-QpNativeRange([string]$mode){
+    switch($mode){
+        'AV1 Base Q Index' {return @(0,255)}
+        'VP8 Base Q Index' {return @(0,127)}
+        'VP9 Base Q Index' {return @(0,255)}
+        'MPEG-4 VOP Quantizer' {return @(1,31)}
+        'VVC SliceQPY' {return @(0,63)}
+        default {return @(0,51)}
+    }
+}
+function ConvertTo-RelativeQSeries($map,[string]$mode){
+    $stats=Get-QpStats $map;if($null-eq$stats-or$stats.Total-le0){return $null};$range=Get-QpNativeRange $mode;$lo=[double]$range[0];$hi=[double]$range[1];$span=[Math]::Max(1.0,$hi-$lo);$points=New-Object 'System.Collections.Generic.List[double]';$raw=New-Object 'System.Collections.Generic.List[int]'
+    for($p=0;$p-le100;$p++){[long]$target=if($p-eq0){1}else{[Math]::Ceiling($stats.Total*$p/100.0)};[long]$run=0;$q=[int]$stats.Items[-1].Q;foreach($item in $stats.Items){$run+=[long]$item.N;if($run-ge$target){$q=[int]$item.Q;break}};$raw.Add($q);$points.Add([Math]::Max(0.0,[Math]::Min(100.0,100.0*($q-$lo)/$span)))}
+    [pscustomobject]@{Mode=$mode;Values=$points.ToArray();Raw=$raw.ToArray();Minimum=$lo;Maximum=$hi;Total=$stats.Total}
+}
+function Update-RelativeQCache {
+    $script:RelativeQCache=$null;if($script:ReferenceOnlyView-or-not$script:ReferenceResult-or-not$script:QpCounts-or$script:QpCounts.Count-eq0-or-not$script:ReferenceResult.QpCounts-or$script:ReferenceResult.QpCounts.Count-eq0){return $false}
+    $a=ConvertTo-RelativeQSeries $script:QpCounts $script:QpMode;$b=ConvertTo-RelativeQSeries $script:ReferenceResult.QpCounts $script:ReferenceResult.QpMode;if($null-eq$a-or$null-eq$b){return $false};$script:RelativeQCache=[pscustomobject]@{A=$a;B=$b};return $true
 }
 function Render-QpHistogram {
     if($null-eq$qpText-or$null-eq$qpStatsText){return};$hasA=(-not$script:ReferenceOnlyView-and$script:QpCounts-and$script:QpCounts.Count-gt0);$hasB=($script:ReferenceResult-and$script:ReferenceResult.QpCounts-and$script:ReferenceResult.QpCounts.Count-gt0)
@@ -910,7 +929,7 @@ $(if($hd.SliceParsed -eq $r.Count -and $hd.SliceRejected -eq 0 -and ($r.I+$r.P+$
     $summary.SelectionStart=0
     $summary.SelectionLength=0
     $summary.ScrollToCaret()
-    Render-QpHistogram
+    Update-ReferenceUi
 }
 function Busy([bool]$v){$open.Enabled=-not $v;$cancel.Enabled=$v;$copy.Enabled=(-not $v-and$summary.TextLength-gt0);$reference.Enabled=(-not $v-and(($null-ne$script:ReferenceResult)-or$script:BitrateBins.Count-gt1));$drop.Enabled=-not $v;$bar.Visible=$v;if(-not $v){$status.Text='Analysis complete'}}
 function Log($s){$log.AppendText($s+[Environment]::NewLine);$log.SelectionStart=$log.TextLength;$log.ScrollToCaret()}
@@ -1058,6 +1077,7 @@ function Start-Meta($path) {
     Test-NativeRuntime
     $script:File=$path
     $script:ReferenceOnlyView=$false
+    $script:TopChartMode='Bitrate';$script:RelativeQCache=$null
     $script:Meta=$null
     $script:PacketResult=$null
     $script:FrameResult=$null
@@ -1201,19 +1221,27 @@ function Finish-Scan([string]$value,$bins) {
         $script:QpCounts=ConvertTo-QuantizerHistogram $script:SliceQpDiagnostic.Histogram
     }
     Render
-    Render-QpHistogram
 }
 function Cancel{$script:Cancelled=$true;$script:ScanPhase='idle';if($script:Mp4PrepJob){$script:Mp4PrepJob.Cancel()};if($script:ScanJob){$script:ScanJob.Cancel()}}
 
 $toolTip=New-Object Windows.Forms.ToolTip;$toolTip.SetToolTip($open,'Native Matroska/WebM, AVI, and MP4/M4V/MOV analysis. No external multimedia engine is used.');$script:BitrateTipIndex=-1;$toolTip.AutoPopDelay=10000;$toolTip.InitialDelay=150;$toolTip.ReshowDelay=50;$toolTip.ShowAlways=$true
 $chart.Add_Paint({
     param($sender,$e)
-    $g=$e.Graphics;$g.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::None
-    $r=$sender.ClientRectangle;$g.SetClip($r,[Drawing.Drawing2D.CombineMode]::Replace);$g.Clear($RoyalPanel)
-    if($script:BitrateBins.Count -lt 2){$f=New-Object Drawing.Font('Segoe UI',9);$g.DrawString('Codec analysis continues automatically after metadata preparation.',$f,(New-Object Drawing.SolidBrush($RoyalMuted)),10,10);$f.Dispose();return}
-    $referenceBins=if($script:ReferenceResult){@($script:ReferenceResult.BitrateBins)}else{@()};$max=($script:BitrateBins|Measure-Object -Maximum).Maximum;if($referenceBins.Count){$rm=($referenceBins|Measure-Object -Maximum).Maximum;if($rm-gt$max){$max=$rm}};if($max-le0){return}
+    $g=$e.Graphics;$g.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::None;$r=$sender.ClientRectangle;$g.SetClip($r,[Drawing.Drawing2D.CombineMode]::Replace);$g.Clear($RoyalPanel)
+    $relative=($script:TopChartMode-eq'RelativeQ'-and$script:RelativeQCache)
+    if($relative){$a=@($script:RelativeQCache.A.Values);$b=@($script:RelativeQCache.B.Values);$max=100.0}
+    else{$a=@($script:BitrateBins);$b=if($script:ReferenceResult){@($script:ReferenceResult.BitrateBins)}else{@()};if($a.Count-lt2){$f=New-Object Drawing.Font('Segoe UI',9);$brush=New-Object Drawing.SolidBrush($RoyalMuted);$g.DrawString('Codec analysis continues automatically after metadata preparation.',$f,$brush,10,10);$brush.Dispose();$f.Dispose();return};$max=($a|Measure-Object -Maximum).Maximum;if($b.Count){$rm=($b|Measure-Object -Maximum).Maximum;if($rm-gt$max){$max=$rm}};if($max-le0){return}}
     $penGrid=New-Object Drawing.Pen($RoyalBorder,1);for($i=1;$i-lt4;$i++){$y=[int]($r.Height*$i/4);$g.DrawLine($penGrid,0,$y,$r.Width,$y)};$penGrid.Dispose()
-    $draw={param($b,$c,$o);$p=New-Object Drawing.Pen($c,1);$x0=$y0=$null;for($i=0;$i-lt$b.Count;$i++){$x=[Math]::Min($r.Width-1,[int]($i*($r.Width-3)/($b.Count-1))+$o);$y=$r.Height-18-[int](($b[$i]/[double]$max)*($r.Height-24));if($null-ne$x0){$g.DrawLine($p,$x0,$y0,$x,$y)};$x0=$x;$y0=$y};$p.Dispose()};if($referenceBins.Count-gt1){&$draw $referenceBins $RoyalGold 0};if(-not$script:ReferenceOnlyView){&$draw $script:BitrateBins $RoyalBlueHi 2};$font=New-Object Drawing.Font('Segoe UI',8);$g.DrawString('0:00',$font,(New-Object Drawing.SolidBrush($RoyalMuted)),2,$r.Height-16);$end=Dur $script:Duration;$sz=$g.MeasureString($end,$font);$g.DrawString($end,$font,(New-Object Drawing.SolidBrush($RoyalMuted)),$r.Width-$sz.Width-3,$r.Height-16);$g.DrawString(('Peak bucket: '+(Bytes $max)),$font,(New-Object Drawing.SolidBrush($RoyalMuted)),5,3);$legendX=$r.Width-158;if(-not $script:ReferenceOnlyView){$blueBrush=New-Object Drawing.SolidBrush($RoyalBlueHi);$g.FillRectangle($blueBrush,$legendX,5,8,8);$g.DrawString('A current',$font,$blueBrush,$legendX+12,1);$blueBrush.Dispose()};if($referenceBins.Count-gt1){$goldBrush=New-Object Drawing.SolidBrush($RoyalGold);$bx=if(-not $script:ReferenceOnlyView){$r.Width-78}else{$r.Width-92};$g.FillRectangle($goldBrush,$bx,5,8,8);$g.DrawString('B reference',$font,$goldBrush,$bx+12,1);$goldBrush.Dispose()};$font.Dispose()
+    $draw={param($v,$c,$o);if($v.Count-lt2){return};$p=New-Object Drawing.Pen($c,1);$x0=$y0=$null;for($i=0;$i-lt$v.Count;$i++){$x=[Math]::Min($r.Width-1,[int]($i*($r.Width-3)/($v.Count-1))+$o);$y=$r.Height-18-[int](($v[$i]/[double]$max)*($r.Height-24));if($null-ne$x0){$g.DrawLine($p,$x0,$y0,$x,$y)};$x0=$x;$y0=$y};$p.Dispose()}
+    if($b.Count-gt1){&$draw $b $RoyalGold 0};if(-not$script:ReferenceOnlyView){&$draw $a $RoyalBlueHi 2}
+    $font=New-Object Drawing.Font('Segoe UI',8);$muted=New-Object Drawing.SolidBrush($RoyalMuted)
+    if($relative){$g.DrawString('0 %',$font,$muted,2,$r.Height-16);$end='100 %';$sz=$g.MeasureString($end,$font);$g.DrawString($end,$font,$muted,$r.Width-$sz.Width-3,$r.Height-16);$g.DrawString('Relative quantization pressure (codec-local scale)',$font,$muted,5,3)}
+    else{$g.DrawString('0:00',$font,$muted,2,$r.Height-16);$end=Dur $script:Duration;$sz=$g.MeasureString($end,$font);$g.DrawString($end,$font,$muted,$r.Width-$sz.Width-3,$r.Height-16);$g.DrawString(('Peak bucket: '+(Bytes $max)),$font,$muted,5,3)}
+    $legendX=$r.Width-158;if(-not$script:ReferenceOnlyView){$blueBrush=New-Object Drawing.SolidBrush($RoyalBlueHi);$g.FillRectangle($blueBrush,$legendX,5,8,8);$g.DrawString('A current',$font,$blueBrush,$legendX+12,1);$blueBrush.Dispose()};if($b.Count-gt1){$goldBrush=New-Object Drawing.SolidBrush($RoyalGold);$bx=if(-not$script:ReferenceOnlyView){$r.Width-78}else{$r.Width-92};$g.FillRectangle($goldBrush,$bx,5,8,8);$g.DrawString('B reference',$font,$goldBrush,$bx+12,1);$goldBrush.Dispose()};$muted.Dispose();$font.Dispose()
+})
+$chart.Add_Click({
+    if($script:TopChartMode-eq'RelativeQ'){$script:TopChartMode='Bitrate';$script:BitrateTipIndex=-1;$toolTip.Hide($chart);Update-ReferenceUi;return}
+    if((Update-RelativeQCache)){$script:TopChartMode='RelativeQ';$script:BitrateTipIndex=-1;$toolTip.Hide($chart);Update-ReferenceUi}
 })
 $timer=New-Object Windows.Forms.Timer
 $timer.Interval=100
@@ -1289,28 +1317,19 @@ $timer.Add_Tick({
 $timer.Start()
 $chart.Add_MouseMove({
     param($sender,$e)
-    $a=@($script:BitrateBins);$b=if($script:ReferenceResult){@($script:ReferenceResult.BitrateBins)}else{@()}
-    $count=[Math]::Max($a.Count,$b.Count);$width=$sender.ClientSize.Width
-    if($count-lt1-or$width-lt4){if($script:BitrateTipIndex-ne-1){$toolTip.Hide($sender);$script:BitrateTipIndex=-1};return}
-    $plotWidth=[Math]::Max(1,$width-3);$mouseX=[Math]::Max(0,[Math]::Min($plotWidth,$e.X));$index=[Math]::Min($count-1,[int][Math]::Floor(($mouseX*$count)/[double]$plotWidth))
-    if($index-eq$script:BitrateTipIndex){return};$script:BitrateTipIndex=$index
-    $duration=if($script:ReferenceOnlyView-and$script:ReferenceResult.Duration){[double]$script:ReferenceResult.Duration}else{[double]$script:Duration}
-    if($duration-le0){$duration=[double]$count};$bucket=$duration/$count;$start=$index*$bucket;$end=[Math]::Min($duration,($index+1)*$bucket);$seconds=[Math]::Max(0.001,$end-$start)
-    $time={param([double]$v)$t=[TimeSpan]::FromSeconds([Math]::Max(0,$v));if($t.TotalHours-ge1){'{0:00}:{1:00}:{2:00}'-f[Math]::Floor($t.TotalHours),$t.Minutes,$t.Seconds}else{'{0:00}:{1:00}'-f[Math]::Floor($t.TotalMinutes),$t.Seconds}}
-    $rate={param([double]$bytes)Rate ($bytes*8.0/$seconds)}
-    $interval='Time interval: '+(& $time $start)+' - '+(& $time $end)
-    $hasA=(-not $script:ReferenceOnlyView)-and($index-lt$a.Count);$hasB=$index-lt$b.Count
-    if($hasA-and$hasB){$line='A / B bitrate: '+(& $rate ([double]$a[$index]))+' | '+(& $rate ([double]$b[$index]))}
-    elseif($hasA){$line='A bitrate: '+(& $rate ([double]$a[$index]))}
-    elseif($hasB){$line='B bitrate: '+(& $rate ([double]$b[$index]))}else{$toolTip.Hide($sender);return}
-    $tipX=[Math]::Max(4,[Math]::Min([Math]::Max(4,$width-260),$e.X+14));$toolTip.Show($interval+[Environment]::NewLine+$line,$sender,$tipX,[Math]::Max(4,$e.Y-42),10000)
+    if($script:TopChartMode-eq'RelativeQ'-and$script:RelativeQCache){$width=$sender.ClientSize.Width;if($width-lt4){return};$plotWidth=[Math]::Max(1,$width-3);$p=[Math]::Max(0,[Math]::Min(100,[int][Math]::Round(100.0*$e.X/$plotWidth)));if($p-eq$script:BitrateTipIndex){return};$script:BitrateTipIndex=$p;$a=$script:RelativeQCache.A;$b=$script:RelativeQCache.B;$tip=('Percentile: {0} %`r`nA | {1}: {2} | relative {3:N1} %`r`nB | {4}: {5} | relative {6:N1} %`r`nRelative comparison only; not quality-equivalent.'-f$p,$a.Mode,$a.Raw[$p],$a.Values[$p],$b.Mode,$b.Raw[$p],$b.Values[$p]);$tipX=[Math]::Max(4,[Math]::Min([Math]::Max(4,$width-360),$e.X+14));$toolTip.Show($tip,$sender,$tipX,[Math]::Max(4,$e.Y-70),10000);return}
+    $a=@($script:BitrateBins);$b=if($script:ReferenceResult){@($script:ReferenceResult.BitrateBins)}else{@()};$count=[Math]::Max($a.Count,$b.Count);$width=$sender.ClientSize.Width
+    if($count-lt1-or$width-lt4){if($script:BitrateTipIndex-ne-1){$toolTip.Hide($sender);$script:BitrateTipIndex=-1};return};$plotWidth=[Math]::Max(1,$width-3);$mouseX=[Math]::Max(0,[Math]::Min($plotWidth,$e.X));$index=[Math]::Min($count-1,[int][Math]::Floor(($mouseX*$count)/[double]$plotWidth));if($index-eq$script:BitrateTipIndex){return};$script:BitrateTipIndex=$index
+    $duration=if($script:ReferenceOnlyView-and$script:ReferenceResult.Duration){[double]$script:ReferenceResult.Duration}else{[double]$script:Duration};if($duration-le0){$duration=[double]$count};$bucket=$duration/$count;$start=$index*$bucket;$end=[Math]::Min($duration,($index+1)*$bucket);$seconds=[Math]::Max(0.001,$end-$start)
+    $time={param([double]$v)$t=[TimeSpan]::FromSeconds([Math]::Max(0,$v));if($t.TotalHours-ge1){'{0:00}:{1:00}:{2:00}'-f[Math]::Floor($t.TotalHours),$t.Minutes,$t.Seconds}else{'{0:00}:{1:00}'-f[Math]::Floor($t.TotalMinutes),$t.Seconds}};$rate={param([double]$bytes)Rate ($bytes*8.0/$seconds)};$interval='Time interval: '+(& $time $start)+' - '+(& $time $end);$hasA=(-not$script:ReferenceOnlyView)-and($index-lt$a.Count);$hasB=$index-lt$b.Count
+    if($hasA-and$hasB){$line='A / B bitrate: '+(& $rate ([double]$a[$index]))+' | '+(& $rate ([double]$b[$index]))}elseif($hasA){$line='A bitrate: '+(& $rate ([double]$a[$index]))}elseif($hasB){$line='B bitrate: '+(& $rate ([double]$b[$index]))}else{$toolTip.Hide($sender);return};$tipX=[Math]::Max(4,[Math]::Min([Math]::Max(4,$width-260),$e.X+14));$toolTip.Show($interval+[Environment]::NewLine+$line,$sender,$tipX,[Math]::Max(4,$e.Y-42),10000)
 })
 $chart.Add_MouseLeave({$toolTip.Hide($chart);$script:BitrateTipIndex=-1})
 $form.Add_SizeChanged({if($chart.IsHandleCreated){$chart.BeginInvoke([Action]{if(-not $chart.IsDisposed){$chart.Invalidate($true);$chart.Refresh()}})|Out-Null}})
 $form.Add_ResizeEnd({if(-not $chart.IsDisposed){$chart.Invalidate($true);$chart.Refresh()}})
 function Pick{$d=New-Object Windows.Forms.OpenFileDialog;$d.Filter='Video files|*.avi;*.mkv;*.mp4;*.m4v;*.mov;*.webm;*.ts;*.m2ts;*.mpg;*.mpeg;*.vob;*.wmv;*.flv;*.ogv;*.264;*.h264;*.265;*.h265;*.hevc|All files|*.*';if($d.ShowDialog() -eq 'OK'){Start-Meta $d.FileName};$d.Dispose()}
-function Update-ReferenceUi {$has=$null-ne$script:ReferenceResult;$reference.Text=if($has){'Remove Ref B'}else{'Set Ref B'};$reference.Enabled=($has-or$script:BitrateBins.Count-gt1);$chartBox.Text=if($has-and$script:ReferenceOnlyView){'Bitrate profile - B reference'}elseif($has){'Bitrate profile - A current / B reference'}else{'Bitrate profile'};$chart.Invalidate();Render-QpHistogram}
+function Update-ReferenceUi {$has=$null-ne$script:ReferenceResult;$hasAB=($has-and-not$script:ReferenceOnlyView-and$script:QpCounts-and$script:QpCounts.Count-gt0-and$script:ReferenceResult.QpCounts-and$script:ReferenceResult.QpCounts.Count-gt0);if(-not$hasAB-and$script:TopChartMode-eq'RelativeQ'){$script:TopChartMode='Bitrate';$script:RelativeQCache=$null};$reference.Text=if($has){'Remove Ref B'}else{'Set Ref B'};$reference.Enabled=($has-or$script:BitrateBins.Count-gt1);$relative=($hasAB-and$script:TopChartMode-eq'RelativeQ'-and$script:RelativeQCache);$chartBox.Text=if($relative){'Relative quantization profile - A / B (click for bitrate)'}elseif($has-and$script:ReferenceOnlyView){'Bitrate profile - B reference'}elseif($hasAB){'Bitrate profile - A current / B reference (click for relative Q)'}elseif($has){'Bitrate profile - A current / B reference'}else{'Bitrate profile'};$chart.Cursor=if($hasAB){[Windows.Forms.Cursors]::Hand}else{[Windows.Forms.Cursors]::Default};$chart.Invalidate();Render-QpHistogram}
 function Set-ReferenceB {if($script:BitrateBins.Count-lt2){return};$qp=@{};foreach($k in $script:QpCounts.Keys){$qp[$k]=$script:QpCounts[$k]};$script:ReferenceResult=[pscustomobject]@{BitrateBins=@($script:BitrateBins);Duration=[double]$script:Duration;QpMode=$script:QpMode;QpCounts=$qp;SummaryText=[string]$summary.Text};$summaryRef.Text=[string]$script:ReferenceResult.SummaryText;if(-not $tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.Insert(1,$summaryRefPage)};$script:ReferenceOnlyView=$true;Update-ReferenceUi;$status.Text=('Reference B set: '+[IO.Path]::GetFileName($script:File))}
-function Remove-ReferenceB {$onlyB=$script:ReferenceOnlyView;if($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage'){$tabs.SelectedIndex=0};if($tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.RemoveByKey('SummaryBPage')};$summaryRef.Clear();$script:ReferenceResult=$null;$script:ReferenceOnlyView=$false;if($onlyB){$script:File='';$script:Meta=$null;$script:Duration=0;$script:PacketResult=$null;$script:FrameResult=$null;$script:BitrateBins=@();$script:QpCounts=@{};$summary.Clear();$json.Clear();$log.Clear();$grid.DataSource=$null;$fileText.Text='Drop a video or click Open video.';$copy.Enabled=$false;$status.Text='Ready'}else{$status.Text='Reference B removed'};Update-ReferenceUi}
+function Remove-ReferenceB {$onlyB=$script:ReferenceOnlyView;if($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage'){$tabs.SelectedIndex=0};if($tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.RemoveByKey('SummaryBPage')};$summaryRef.Clear();$script:ReferenceResult=$null;$script:ReferenceOnlyView=$false;$script:TopChartMode='Bitrate';$script:RelativeQCache=$null;if($onlyB){$script:File='';$script:Meta=$null;$script:Duration=0;$script:PacketResult=$null;$script:FrameResult=$null;$script:BitrateBins=@();$script:QpCounts=@{};$summary.Clear();$json.Clear();$log.Clear();$grid.DataSource=$null;$fileText.Text='Drop a video or click Open video.';$copy.Enabled=$false;$status.Text='Ready'}else{$status.Text='Reference B removed'};Update-ReferenceUi}
 $open.Add_Click({Pick});$cancel.Add_Click({Cancel});$copy.Add_Click({$isRef=($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage');$copyText=if($isRef){[string]$summaryRef.Text}else{[string]$summary.Text};if(-not[string]::IsNullOrWhiteSpace($copyText)){[Windows.Forms.Clipboard]::SetText($copyText);$status.Text=if($isRef){'Reference B report copied'}else{'Current A report copied'}}});$reference.Add_Click({if($script:ReferenceResult){Remove-ReferenceB}else{Set-ReferenceB}})
 $dragEnter={if($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){$_.Effect='Copy'}else{$_.Effect='None'}};$dragDrop={$f=$_.Data.GetData([Windows.Forms.DataFormats]::FileDrop);if($f.Count){Start-Meta $f[0]}};$form.Add_DragEnter($dragEnter);$form.Add_DragDrop($dragDrop);$drop.Add_DragEnter($dragEnter);$drop.Add_DragDrop($dragDrop);$form.Add_KeyDown({if($_.KeyCode -eq 'Escape'){Cancel}elseif($_.Control-and$_.KeyCode -eq 'O'){Pick}});$form.Add_FormClosing({Cancel;$timer.Stop();if($script:Mp4PrepJob){$script:Mp4PrepJob.Dispose()};if($script:ScanJob){$script:ScanJob.Dispose()};[Threading.Thread]::CurrentThread.CurrentCulture=$script:OriginalCulture;[Threading.Thread]::CurrentThread.CurrentUICulture=$script:OriginalCulture});[void]$form.ShowDialog()
