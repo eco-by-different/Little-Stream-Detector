@@ -15,6 +15,30 @@ LSD does not use FFmpeg, FFprobe, MediaInfo, or other external multimedia tools.
 
 ![Little Stream Detector 3.0](lsd-gui.png)
 
+## Available versions
+
+- LSD.ps1
+- LSD.exe
+- LSD_mini.exe
+
+There are currently three ways to use the tool:
+
+PowerShell script
+
+The original standalone PowerShell script. Its contents can be reviewed before execution, and it does not contain an executable wrapper.
+
+IExpress package
+
+The same PowerShell script packaged as an EXE using Microsoft IExpress. This version does not use MiniBuilder or the custom launcher. It currently produces the fewest antivirus detections in our testing, but uses the default IExpress icon.
+
+Mini EXE
+
+A compact executable of approximately 90 KB, created with MiniBuilder and our custom launcher. This version provides a custom EXE experience and includes our application icon, but it may trigger more heuristic antivirus detections.
+
+All three versions perform the same basic task. The only differences are in packaging, appearance, and antivirus compatibility.
+
+For maximum transparency, use the standalone PowerShell script. For convenient execution with fewer potential false positives, use the IExpress version. Choose the Mini EXE if you prefer the compact custom launcher and custom application appearance.
+##
 ### Antivirus Notice
 
 The compiled `.exe` is generated from the PowerShell source. Some antivirus engines, including Windows Defender or machine-learning-based scanners, may report a false positive.
