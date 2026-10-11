@@ -5,7 +5,7 @@
 
 Little Stream Detector (LSD) is a lightweight, portable video stream analyzer for Windows.
 
-LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, VVC/H.266, AV1, VP8, and VP9 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and frame-type analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
+LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, VVC/H.266, AV1, AV2, VP8, and VP9 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and frame-type analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
 
 Version 3.0 adds direct comparison of a current encode against a saved reference. The application can display both bitrate profiles and compatible DRF/QP distributions in a shared view while preserving separate reports for the current file and the reference file.
 
@@ -153,6 +153,7 @@ The comparison view includes:
 - H.265/HEVC analysis
 - H.266/VVC two-pass analysis for supported length-prefixed streams
 - AV1 analysis, including multi-tile frame headers
+- AV2 analysis with native two-pass OBU collection, frame-event resolution, and Base Q Index reporting
 - VP8 analysis in Matroska/WebM
 - VP9 analysis in Matroska/WebM and standard non-fragmented MP4/MOV
 - MPEG-4 Part 2/XviD analysis, including GMC/S-VOP handling
@@ -166,7 +167,7 @@ The comparison view includes:
 - Native frame-level AVC and HEVC SliceQPY analysis
 - Native frame-level VVC SliceQPY analysis with complete-picture validation
 - Native pixel-format reporting from codec chroma format and bit depth where available
-- Native AV1, VP8, and VP9 Base Q Index analysis
+- Native AV1, AV2, VP8, and VP9 Base Q Index analysis
 - Native MPEG-4 Part 2 VOP quantizer analysis
 - Quantizer distribution histograms and completeness validation
 
