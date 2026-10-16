@@ -11,7 +11,7 @@ Version 3.0 adds direct comparison of a current encode against a saved reference
 
 LSD does not use FFmpeg, FFprobe, MediaInfo, or other external multimedia tools. Video files are read and analyzed without decoding, modification, or transcoding.
 
-### Screenshot
+## Screenshot
 
 ![Little Stream Detector 3.0](lsd-gui.png)
 
