@@ -1,8 +1,5 @@
 ## Little Stream Detector (LSD)
 
-![Repo size](https://img.shields.io/github/repo-size/eco-by-different/Little-Stream-Detector)
-![Last commit](https://img.shields.io/github/last-commit/eco-by-different/Little-Stream-Detector)
-
 Little Stream Detector (LSD) is a lightweight, portable video stream analyzer for Windows.
 
 LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers together with native XviD, AVC/H.264, HEVC/H.265, VVC/H.266, AV1, AV2, VP8, and VP9 bitstream analysis. It provides frame-level QP/DRF statistics, quantizer distributions, GOP and frame-type analysis, bitrate profiles, stream metadata, and detailed diagnostic reports.
@@ -10,10 +7,6 @@ LSD performs native parsing of Matroska, WebM, MP4, M4V, MOV, and AVI containers
 Version 3.0 adds direct comparison of a current encode against a saved reference. The application can display both bitrate profiles and compatible DRF/QP distributions in a shared view while preserving separate reports for the current file and the reference file.
 
 LSD does not use FFmpeg, FFprobe, MediaInfo, or other external multimedia tools. Video files are read and analyzed without decoding, modification, or transcoding.
-
-## Screenshot
-
-![Little Stream Detector 3.0](lsd-gui.png)
 
 ## Available versions
 
