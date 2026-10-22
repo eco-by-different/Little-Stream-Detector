@@ -33,7 +33,7 @@ The same PowerShell script packaged as an EXE using Microsoft IExpress. This ver
 
 Mini EXE
 
-A compact executable of approximately 90 KB, created with MiniBuilder and our custom launcher. This version provides a custom EXE experience and includes our application icon, but it may trigger more heuristic antivirus detections.
+A compact executable of approximately 125 KB, created with MiniBuilder and our custom launcher. This version provides a custom EXE experience and includes our application icon, but it may trigger more heuristic antivirus detections.
 
 All three versions perform the same basic task. The only differences are in packaging, appearance, and antivirus compatibility.
 
