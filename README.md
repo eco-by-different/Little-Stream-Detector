@@ -38,7 +38,7 @@ A compact executable of approximately 125 KB, created with MiniBuilder and our c
 All three versions perform the same basic task. The only differences are in packaging, appearance, and antivirus compatibility.
 
 For maximum transparency, use the standalone PowerShell script. For convenient execution with fewer potential false positives, use the IExpress version. Choose the Mini EXE if you prefer the compact custom launcher and custom application appearance.
-##
+
 ### Antivirus Notice
 
 The compiled `.exe` is generated from the PowerShell source. Some antivirus engines, including Windows Defender or machine-learning-based scanners, may report a false positive.
@@ -78,8 +78,27 @@ No installation or administrator privileges are required.
 - Use **Summary A** and **Summary B** to review the reports independently.
 - Move the pointer across the bitrate graph to display the selected time interval and the corresponding A/B bitrate values.
 - Use **Copy** to copy the report from the active Summary tab.
+- Open **Preview** to inspect A Current and B Reference in two independent muted preview panes.
+- Click either pane to make it active. Ref A is highlighted in blue and Ref B in gold.
+- Use **Left Arrow** and **Right Arrow** to move the active preview by one step on its own abstract axis. Press **Space** to toggle Play/Pause for the active pane.
+- Use each preview axis independently. Source frame rate does not control preview stepping.
+For meaningful visual comparison, A and B should represent corresponding versions of the same source. The user manually selects the pictures to compare.
 
-For meaningful timeline comparison, A and B should represent time-aligned versions of the same source.
+### Manual Preview
+  
+The **Preview** tab provides two independent, muted panes for manual visual inspection:
+- **Ref A** is shown with a blue active-state accent and follows A Current.
+- **Ref B** is shown with a gold active-state accent and follows B Reference.
+- One shared preview implementation creates two separate Windows media instances, each with its own source, position, controls, and abstract axis.
+- The two axes advance independently and are not driven by the source video's reported frame rate.
+- Click anywhere in a pane, including the displayed picture or black letterbox area, to select it for keyboard control.
+- **Left Arrow** and **Right Arrow** move the selected pane by one axis step. **Space** toggles Play/Pause.
+- The panes are not synchronized. There is no shared timeline, automatic offset, speed correction, or frame matching.
+- If a source is missing or cannot be decoded by the Windows media pipeline, the pane displays **PREVIEW UNAVAILABLE**.
+  
+Preview is intentionally a **manual visual aid** and is separate from LSD's deterministic native analysis. LSD does not infer conversion history and does not assume that equal axis positions represent the same source picture. The user manually locates the pictures to compare. Analytical reports, bitrate profiles, parser results, and quantizer statistics remain independent of Preview.
+  
+Preview availability depends on the Windows media pipeline and installed system decoders. A file may therefore be analyzable by LSD while remaining unavailable in Preview.
 
 ### A Current and B Reference
 
@@ -102,6 +121,11 @@ The comparison view includes:
 - separate **Summary A** and **Summary B** report tabs
 
 ### What's New in 3.0
+- Added a **Manual Preview** tab with independent blue Ref A and gold Ref B preview panes.
+- Added two independent abstract preview axes that are not driven by the source video's reported frame rate.
+- Added per-pane Play/Pause, reset, step controls, axis sliders, active-pane keyboard control, and full-pane selection.
+- Added a unified **PREVIEW UNAVAILABLE** state for missing or unsupported preview sources.
+- Kept Preview deliberately unsynchronized: LSD does not estimate source-frame correspondence or conversion history.
 
 - Added the **A Current / B Reference** comparison model.
 - Added **Set Ref B** and **Remove Ref B** controls.
@@ -182,7 +206,7 @@ The comparison view includes:
 
 #### Interface and Reports
 
-- **Summary A**, **Summary B**, **Streams**, **JSON**, and **Log** views
+- **Summary A**, **Summary B**, **Streams**, **JSON**, **Log**, and independent **Preview** views
 - Comparative bitrate profile graph
 - Interactive bitrate tooltip
 - Comparative compatible quantizer distributions
@@ -217,6 +241,11 @@ The branch reuses the existing codec and audio analyzers after canonical samples
 - AVI files containing AAC or E-AC-3 audio are not currently supported.
 - Container-only color metadata, such as MP4 colr/nclx or Matroska Colour, is not currently used as a fallback.
 - VVC results are published only after complete two-pass validation; unsupported VVC syntax paths are rejected rather than estimated.
+- Preview is a manual visual aid and does not synchronize A and B automatically.
+- Preview axes are independent and are not a source-time or source-frame identity model.
+- Equal axis positions do not prove that two displayed pictures share the same source frame.
+- Displayed pictures depend on the Windows media pipeline and installed system decoders.
+- Files that cannot be decoded by the Windows media pipeline may still be analyzable by LSD but unavailable in Preview.
 - Quantizer distributions are directly comparable only when A and B use the same quantizer metric.
 
 ### License
