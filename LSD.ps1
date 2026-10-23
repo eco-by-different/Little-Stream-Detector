@@ -1801,6 +1801,8 @@ $previewB.Back.Add_Click({Set-ActivePreview 'B';Set-PreviewAxis $previewB 'B' ($
 $previewB.Next.Add_Click({Set-ActivePreview 'B';Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex+1)})
 $previewB.Play.Add_Click({Set-ActivePreview 'B';Toggle-ActivePreviewPlayback})
 $previewB.Track.Add_Scroll({Set-ActivePreview 'B';Set-PreviewAxisFromTrack $previewB 'B'})
+$previewArrowKey={param($sender,$e);if($e.KeyCode-in @([Windows.Forms.Keys]::Left,[Windows.Forms.Keys]::Right,[Windows.Forms.Keys]::Up,[Windows.Forms.Keys]::Down)){$e.IsInputKey=$true}}
+foreach($control in @($previewA.First,$previewA.Back,$previewA.Play,$previewA.Next,$previewA.Track,$previewB.First,$previewB.Back,$previewB.Play,$previewB.Next,$previewB.Track)){$control.Add_PreviewKeyDown($previewArrowKey)}
 $previewA.Root.Add_MouseDown({Set-ActivePreview 'A'});$previewA.Host.Add_MouseDown({Set-ActivePreview 'A'});$previewA.Surface.Add_MouseLeftButtonDown({Set-ActivePreview 'A'});$previewA.Surface.Add_TouchDown({Set-ActivePreview 'A'});$previewA.Bar.Add_MouseDown({Set-ActivePreview 'A'});$previewA.Position.Add_Click({Set-ActivePreview 'A'});$previewA.Header.Add_Click({Set-ActivePreview 'A'})
 $previewB.Root.Add_MouseDown({Set-ActivePreview 'B'});$previewB.Host.Add_MouseDown({Set-ActivePreview 'B'});$previewB.Surface.Add_MouseLeftButtonDown({Set-ActivePreview 'B'});$previewB.Surface.Add_TouchDown({Set-ActivePreview 'B'});$previewB.Bar.Add_MouseDown({Set-ActivePreview 'B'});$previewB.Position.Add_Click({Set-ActivePreview 'B'});$previewB.Header.Add_Click({Set-ActivePreview 'B'})
 Set-ActivePreview 'A'
@@ -2158,6 +2160,7 @@ function Remove-ReferenceB {$onlyB=$script:ReferenceOnlyView;if($tabs.SelectedTa
 $open.Add_Click({Pick});$cancel.Add_Click({Cancel});$copy.Add_Click({$isRef=($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage');$copyText=if($isRef){[string]$summaryRef.Text}else{[string]$summary.Text};if(-not[string]::IsNullOrWhiteSpace($copyText)){[Windows.Forms.Clipboard]::SetText($copyText);$status.Text=if($isRef){'Reference B report copied'}else{'Current A report copied'}}});$reference.Add_Click({if($script:ReferenceResult){Remove-ReferenceB}else{Set-ReferenceB}})
 $dragEnter={if($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){$_.Effect='Copy'}else{$_.Effect='None'}};$dragDrop={$f=$_.Data.GetData([Windows.Forms.DataFormats]::FileDrop);if($f.Count){Start-Meta $f[0]}};$form.Add_DragEnter($dragEnter);$form.Add_DragDrop($dragDrop);$drop.Add_DragEnter($dragEnter);$drop.Add_DragDrop($dragDrop);$form.Add_KeyDown({
     if($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'PreviewPage'){
+        if($_.KeyCode-eq'Up'-or$_.KeyCode-eq'Down'){$_.Handled=$true;$_.SuppressKeyPress=$true;return}
         if($_.KeyCode-eq'Left'){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex-1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex-1)};$_.SuppressKeyPress=$true;return}
         if($_.KeyCode-eq'Right'){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex+1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex+1)};$_.SuppressKeyPress=$true;return}
         if($_.KeyCode-eq'Space'){Toggle-ActivePreviewPlayback;$_.SuppressKeyPress=$true;return}
