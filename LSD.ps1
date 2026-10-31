@@ -1579,7 +1579,8 @@ $color="$(NA $video.color_primaries) / $(NA $video.color_transfer) / $(NA $video
 $displayParts=@((Display-Resolution $video) -split ' x ');$displayRatio=if($displayParts.Count -eq 2){Ratio ([long]$displayParts[0]) ([long]$displayParts[1])}else{'N/A'}
 $resolvedFrameRate=0
 if($script:FrameResult -and $script:Duration -gt 0){$resolvedFrameRate=$script:FrameResult.Count/$script:Duration}
-if($resolvedFrameRate -le 0){$rr=$video.avg_frame_rate -split '/';if($rr.Count -eq 2 -and [double]$rr[1] -ne 0){$resolvedFrameRate=[double]$rr[0]/[double]$rr[1]}}
+$declaredFrameRate=0;$rr=$video.avg_frame_rate -split '/';if($rr.Count -eq 2 -and [double]$rr[1] -ne 0){$declaredFrameRate=[double]$rr[0]/[double]$rr[1]}
+if($declaredFrameRate -gt 0 -and ($resolvedFrameRate -le 0 -or [Math]::Abs($resolvedFrameRate-$declaredFrameRate) -le 0.01)){$resolvedFrameRate=$declaredFrameRate}
 Add-CanonicalReportRows $canonicalReport @('','[ Video ]','',"Codec:              $(NA $video.codec_long_name)",$(if($video.profile -and $level -ne 'N/A'){"Profile / Level:    $($video.profile)@L$level"}else{"Profile / Level:    N/A"}),"Resolution:         $($video.width) x $($video.height)","Display resolution: $(Display-Resolution $video)","Aspect ratio:       $(Ratio $video.width $video.height)","Display aspect ratio: $displayRatio",$(if($resolvedFrameRate -gt 0){"Frame rate:         $('{0:N3}' -f $resolvedFrameRate) fps"}else{"Frame rate:         N/A"}),"Pixel format:       $(NA $video.pix_fmt)","Bit depth:          $(if($depth -gt 0){'{0} bit' -f $depth}else{'N/A'})","Color:              $color")
 if($script:PacketResult){
 $r=$script:PacketResult
