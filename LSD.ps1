@@ -1722,7 +1722,7 @@ $grid.BackgroundColor=$RoyalPanel;$grid.GridColor=$RoyalBorder;$grid.BorderStyle
 $grid.ColumnHeadersDefaultCellStyle.BackColor=$RoyalPanel2;$grid.ColumnHeadersDefaultCellStyle.ForeColor=$RoyalGold
 $grid.DefaultCellStyle.BackColor=$RoyalPanel;$grid.DefaultCellStyle.ForeColor=$RoyalText;$grid.DefaultCellStyle.SelectionBackColor=$RoyalBlue;$grid.DefaultCellStyle.SelectionForeColor=$RoyalText
 }
-$form=New-Object Windows.Forms.Form;$form.Text="Little Stream Detector (LSD) 3.0";$form.ClientSize=New-Object Drawing.Size(1024,810);$form.MinimumSize=New-Object Drawing.Size(760,680);$form.StartPosition='CenterScreen';$form.AllowDrop=$true;$form.KeyPreview=$true;$form.Font=New-Object Drawing.Font('Segoe UI',9)
+$form=New-Object Windows.Forms.Form;$form.Text="Little Stream Detector (LSD) 3.0";$form.ClientSize=New-Object Drawing.Size(1024,810);$form.MinimumSize=New-Object Drawing.Size(760,680);$form.StartPosition='CenterScreen';$form.Font=New-Object Drawing.Font('Segoe UI',9)
 function Label($t,$x,$y,$w,$h){$c=New-Object Windows.Forms.Label;$c.Text=$t;$c.SetBounds($x,$y,$w,$h);$c}
 $title=Label 'Little Stream Detector (LSD)' 20 12 520 38;$title.Font=New-Object Drawing.Font('Segoe UI',20,[Drawing.FontStyle]::Bold);$sub=Label '' 0 0 0 0;$sub.Visible=$false
 $open=New-Object Windows.Forms.Button;$open.Text='Open video';$open.SetBounds(20,58,122,32);$cancel=New-Object Windows.Forms.Button;$cancel.Text='Cancel';$cancel.SetBounds(150,58,80,32);$cancel.Enabled=$false;$copy=New-Object Windows.Forms.Button;$copy.Text='Copy';$copy.SetBounds(238,58,72,32);$copy.Enabled=$false;$reference=New-Object Windows.Forms.Button;$reference.Text='Set Ref B';$reference.SetBounds(318,58,104,32);$reference.Enabled=$false;$fileText=Label 'Drop a video or click Open video.' 434 65 564 24;$fileText.AutoEllipsis=$true;$fileText.Anchor='Top,Left,Right'
@@ -2149,24 +2149,26 @@ $time={param([double]$v)$t=[TimeSpan]::FromSeconds([Math]::Max(0,$v));if($t.Tota
 if($hasA-and$hasB){$line='A / B bitrate: '+(& $rate ([double]$a[$index]))+' | '+(& $rate ([double]$b[$index]))}elseif($hasA){$line='A bitrate: '+(& $rate ([double]$a[$index]))}elseif($hasB){$line='B bitrate: '+(& $rate ([double]$b[$index]))}else{$toolTip.Hide($sender);return};$tipX=[Math]::Max(4,[Math]::Min([Math]::Max(4,$width-260),$e.X+14));$toolTip.Show($interval+[Environment]::NewLine+$line,$sender,$tipX,[Math]::Max(4,$e.Y-42),10000)
 })
 $chart.Add_MouseLeave({$toolTip.Hide($chart);$script:BitrateTipIndex=-1})
-$form.Add_SizeChanged({if($chart.IsHandleCreated-and-not$chart.IsDisposed){$chart.Invalidate($true)}})
-$form.Add_ResizeEnd({if(-not $chart.IsDisposed){$chart.Invalidate($true);$chart.Refresh()}})
 function Pick{$d=New-Object Windows.Forms.OpenFileDialog;$d.Filter='Video files|*.avi;*.mkv;*.mp4;*.m4v;*.mov;*.webm;*.ts;*.m2ts;*.mpg;*.mpeg;*.vob;*.wmv;*.flv;*.ogv;*.264;*.h264;*.265;*.h265;*.hevc|All files|*.*';if($d.ShowDialog() -eq 'OK'){Start-Meta $d.FileName};$d.Dispose()}
 function Update-ReferenceUi {$has=$null-ne$script:ReferenceResult;$hasAB=($has-and-not$script:ReferenceOnlyView-and$script:QpCounts-and$script:QpCounts.Count-gt0-and$script:ReferenceResult.QpCounts-and$script:ReferenceResult.QpCounts.Count-gt0);if(-not$hasAB-and$script:TopChartMode-eq'RelativeQ'){$script:TopChartMode='Bitrate';$script:RelativeQCache=$null};$reference.Text=if($has){'Remove Ref B'}else{'Set Ref B'};$reference.Enabled=($has-or$script:BitrateBins.Count-gt1);$relative=($hasAB-and$script:TopChartMode-eq'RelativeQ'-and$script:RelativeQCache);$chartBox.Text=if($relative){'Relative quantization profile - A / B (click for bitrate)'}elseif($has-and$script:ReferenceOnlyView){'Bitrate profile - B reference'}elseif($hasAB){'Bitrate profile - A current / B reference (click for relative Q)'}elseif($has){'Bitrate profile - A current / B reference'}else{'Bitrate profile'};$chart.Cursor=if($hasAB){[Windows.Forms.Cursors]::Hand}else{[Windows.Forms.Cursors]::Default};$chart.Invalidate();Render-QpHistogram}
 function Set-ReferenceB {if($script:BitrateBins.Count-lt2-or$null-eq$script:CurrentSummaryReport){return};$qp=@{};foreach($k in $script:QpCounts.Keys){$qp[$k]=$script:QpCounts[$k]};$referenceReport=Copy-CanonicalSummaryReport $script:CurrentSummaryReport;$referenceLines=Render-CanonicalSummaryReport $referenceReport;$cur=@($summary.Lines|ForEach-Object{[string]$_});if(-not(Test-CanonicalRenderedEquality $cur $referenceLines)){throw 'CSR reference snapshot validation failed.'};$script:ReferenceResult=[pscustomobject]@{BitrateBins=@($script:BitrateBins);Duration=[double]$script:Duration;QpMode=$script:QpMode;QpCounts=$qp;SummaryReport=$referenceReport;SourcePath=$script:File};$summaryRef.Lines=$referenceLines;$summary.Clear();if(-not$tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.Insert(1,$summaryRefPage)};$script:ReferenceOnlyView=$true;Set-PreviewSource $previewB $script:ReferenceResult.SourcePath;$script:PreviewBIndex=0;$script:PreviewBRunning=$false;$previewB.Play.Text='Play';$previewB.Position.Text='Axis: 0';Set-PreviewSource $previewA '';$script:PreviewAIndex=0;$script:PreviewARunning=$false;$previewA.Play.Text='Play';$previewA.Position.Text='Axis: 0';Update-ReferenceUi;$status.Text=('Reference B set: '+[IO.Path]::GetFileName($script:File))}
 function Remove-ReferenceB {$onlyB=$script:ReferenceOnlyView;if($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage'){$tabs.SelectedIndex=0};if($tabs.TabPages.ContainsKey('SummaryBPage')){$tabs.TabPages.RemoveByKey('SummaryBPage')};$summaryRef.Clear();$script:ReferenceResult=$null;Set-PreviewSource $previewB '';$script:PreviewBIndex=0;$script:PreviewBRunning=$false;$previewB.Play.Text='Play';$previewB.Position.Text='Axis: 0';$script:ReferenceOnlyView=$false;$script:TopChartMode='Bitrate';$script:RelativeQCache=$null;if($onlyB){$script:File='';$script:Meta=$null;$script:Duration=0;$script:PacketResult=$null;$script:FrameResult=$null;$script:BitrateBins=@();$script:QpCounts=@{};$summary.Clear();$json.Clear();$log.Clear();$grid.DataSource=$null;$fileText.Text='Drop a video or click Open video.';$copy.Enabled=$false;$status.Text='Ready'}else{$status.Text='Reference B removed'};Update-ReferenceUi}
 $open.Add_Click({Pick});$cancel.Add_Click({Cancel});$copy.Add_Click({$isRef=($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'SummaryBPage');$copyText=if($isRef){[string]$summaryRef.Text}else{[string]$summary.Text};if(-not[string]::IsNullOrWhiteSpace($copyText)){[Windows.Forms.Clipboard]::SetText($copyText);$status.Text=if($isRef){'Reference B report copied'}else{'Current A report copied'}}});$reference.Add_Click({if($script:ReferenceResult){Remove-ReferenceB}else{Set-ReferenceB}})
-$dragEnter={if($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){$_.Effect='Copy'}else{$_.Effect='None'}};$dragDrop={$f=$_.Data.GetData([Windows.Forms.DataFormats]::FileDrop);if($f.Count){Start-Meta $f[0]}};$form.Add_DragEnter($dragEnter);$form.Add_DragDrop($dragDrop);$drop.Add_DragEnter($dragEnter);$drop.Add_DragDrop($dragDrop);$form.Add_KeyDown({
+$dragEnter={if($_.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){$_.Effect='Copy'}else{$_.Effect='None'}};$dragDrop={$f=$_.Data.GetData([Windows.Forms.DataFormats]::FileDrop);if($f.Count){Start-Meta $f[0]}};$drop.Add_DragEnter($dragEnter);$drop.Add_DragDrop($dragDrop);$previewWinFormsKeyDown={
+$key=$_.KeyCode
 if($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'PreviewPage'){
-if($_.KeyCode-eq'Up'-or$_.KeyCode-eq'Down'){$_.Handled=$true;$_.SuppressKeyPress=$true;return}
-if($_.KeyCode-eq'Left'){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex-1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex-1)};$_.SuppressKeyPress=$true;return}
-if($_.KeyCode-eq'Right'){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex+1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex+1)};$_.SuppressKeyPress=$true;return}
-if($_.KeyCode-eq'Space'){Toggle-ActivePreviewPlayback;$_.SuppressKeyPress=$true;return}
+if($key-eq[Windows.Forms.Keys]::Up-or$key-eq[Windows.Forms.Keys]::Down){$_.Handled=$true;$_.SuppressKeyPress=$true;return}
+if($key-eq[Windows.Forms.Keys]::Left){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex-1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex-1)};$_.Handled=$true;$_.SuppressKeyPress=$true;return}
+if($key-eq[Windows.Forms.Keys]::Right){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex+1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex+1)};$_.Handled=$true;$_.SuppressKeyPress=$true;return}
+if($key-eq[Windows.Forms.Keys]::Space){Toggle-ActivePreviewPlayback;$_.Handled=$true;$_.SuppressKeyPress=$true;return}
 }
-if($_.KeyCode -eq 'Escape'){Cancel}elseif($_.Control-and$_.KeyCode -eq 'O'){Pick}
- });
+if($key-eq[Windows.Forms.Keys]::Escape){Cancel;$_.Handled=$true;$_.SuppressKeyPress=$true}elseif($_.Control-and$key-eq[Windows.Forms.Keys]::O){Pick;$_.Handled=$true;$_.SuppressKeyPress=$true}
+}
+function Register-WorkspaceKeyHandler([Windows.Forms.Control]$root){
+$root.Add_KeyDown($previewWinFormsKeyDown)
+foreach($child in $root.Controls){Register-WorkspaceKeyHandler $child}
+}
 $cleanup={Cancel;$timer.Stop();$previewTimer.Stop();$previewA.Media.Stop();$previewB.Media.Stop();if($script:Mp4PrepJob){$script:Mp4PrepJob.Dispose()};if($script:ScanJob){$script:ScanJob.Dispose()};[Threading.Thread]::CurrentThread.CurrentCulture=$script:OriginalCulture;[Threading.Thread]::CurrentThread.CurrentUICulture=$script:OriginalCulture}
-# Cleanup is called by the WPF shell closing event.
 
 # Existing WinForms controls become one hosted workspace. The original Form is never shown.
 $workspace=New-Object Windows.Forms.Panel;$workspace.Size=New-Object Drawing.Size(1024,810);$workspace.BackColor=$RoyalBg;$workspace.Margin=New-Object Windows.Forms.Padding(0);$workspace.Dock='Fill';$workspace.AllowDrop=$true
@@ -2175,6 +2177,7 @@ $open.SetBounds(20,12,122,32);$cancel.SetBounds(150,12,80,32);$copy.SetBounds(23
 $drop.SetBounds(20,54,978,72);$bar.SetBounds(20,135,978,8);$chartBox.SetBounds(20,152,978,142);$workspaceSplit.SetBounds(20,302,978,472);$status.SetBounds(20,782,978,22)
 $workspaceSplit.Height=472
 $workspaceHost=New-Object Windows.Forms.Integration.WindowsFormsHost;$workspaceHost.Child=$workspace
+Register-WorkspaceKeyHandler $workspace
 
 [xml]$shellXaml=@'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -2230,7 +2233,16 @@ $headerDrag=$wpfWindow.FindName('HeaderDrag');$minButton=$wpfWindow.FindName('Mi
 $minButton.Add_Click({$wpfWindow.WindowState='Minimized'});$maxButton.Add_Click({$wpfWindow.WindowState=if($wpfWindow.WindowState-eq'Maximized'){'Normal'}else{'Maximized'}});$closeButton.Add_Click({$wpfWindow.Close()})
 $closeButton.Add_MouseEnter({$closeButton.Background=New-Object Windows.Media.SolidColorBrush([Windows.Media.Color]::FromRgb(196,43,55))});$closeButton.Add_MouseLeave({$closeButton.Background=[Windows.Media.Brushes]::Transparent})
 $headerDrag.Add_MouseLeftButtonDown({if($_.ClickCount-eq2){$wpfWindow.WindowState=if($wpfWindow.WindowState-eq'Maximized'){'Normal'}else{'Maximized'}}else{$wpfWindow.DragMove()}})
-$wpfWindow.Add_PreviewKeyDown({if($_.Key-eq'Escape'){Cancel};if(($_.KeyboardDevice.Modifiers -band [Windows.Input.ModifierKeys]::Control) -and $_.Key -eq 'O'){Pick}})
+$wpfWindow.Add_PreviewKeyDown({
+$key=$_.Key;$ctrl=($_.KeyboardDevice.Modifiers-band[Windows.Input.ModifierKeys]::Control)
+if($tabs.SelectedTab-and$tabs.SelectedTab.Name-eq'PreviewPage'){
+if($key-eq[Windows.Input.Key]::Up-or$key-eq[Windows.Input.Key]::Down){$_.Handled=$true;return}
+if($key-eq[Windows.Input.Key]::Left){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex-1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex-1)};$_.Handled=$true;return}
+if($key-eq[Windows.Input.Key]::Right){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex+1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex+1)};$_.Handled=$true;return}
+if($key-eq[Windows.Input.Key]::Space){Toggle-ActivePreviewPlayback;$_.Handled=$true;return}
+}
+if($key-eq[Windows.Input.Key]::Escape){Cancel;$_.Handled=$true}elseif($ctrl-and$key-eq[Windows.Input.Key]::O){Pick;$_.Handled=$true}
+})
 # The shell is already 105 px header + 810 px workspace; avoid a second post-render resize.
 $wpfWindow.Add_ContentRendered({[LSDConsole]::Hide()})
 $script:ShellCleanupDone=$false;$wpfWindow.Add_Closing({if(-not $script:ShellCleanupDone){$script:ShellCleanupDone=$true;& $cleanup};if(-not $form.IsDisposed){$form.Dispose()}})
