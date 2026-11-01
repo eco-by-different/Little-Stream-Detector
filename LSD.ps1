@@ -1327,7 +1327,7 @@ readonly double duration; readonly int nalLengthSize; readonly H264SliceHeaderCo
 }
 "@
 [void][HevcProbeBitReaderSelfTest]::Run()
-[LSDConsole]::Hide()
+# Console is hidden after the WPF shell is rendered.
 $script:OriginalCulture = [Globalization.CultureInfo]::CurrentCulture
 $script:EnglishCulture = [Globalization.CultureInfo]::GetCultureInfo('en-US')
 [Threading.Thread]::CurrentThread.CurrentCulture = $script:EnglishCulture
@@ -2164,4 +2164,74 @@ if($_.KeyCode-eq'Right'){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previe
 if($_.KeyCode-eq'Space'){Toggle-ActivePreviewPlayback;$_.SuppressKeyPress=$true;return}
 }
 if($_.KeyCode -eq 'Escape'){Cancel}elseif($_.Control-and$_.KeyCode -eq 'O'){Pick}
-});$form.Add_FormClosing({Cancel;$timer.Stop();$previewTimer.Stop();$previewA.Media.Stop();$previewB.Media.Stop();if($script:Mp4PrepJob){$script:Mp4PrepJob.Dispose()};if($script:ScanJob){$script:ScanJob.Dispose()};[Threading.Thread]::CurrentThread.CurrentCulture=$script:OriginalCulture;[Threading.Thread]::CurrentThread.CurrentUICulture=$script:OriginalCulture});[void]$form.ShowDialog()
+ });
+$cleanup={Cancel;$timer.Stop();$previewTimer.Stop();$previewA.Media.Stop();$previewB.Media.Stop();if($script:Mp4PrepJob){$script:Mp4PrepJob.Dispose()};if($script:ScanJob){$script:ScanJob.Dispose()};[Threading.Thread]::CurrentThread.CurrentCulture=$script:OriginalCulture;[Threading.Thread]::CurrentThread.CurrentUICulture=$script:OriginalCulture}
+# Cleanup is called by the WPF shell closing event.
+
+# Existing WinForms controls become one hosted workspace. The original Form is never shown.
+$workspace=New-Object Windows.Forms.Panel;$workspace.Size=New-Object Drawing.Size(1024,810);$workspace.BackColor=$RoyalBg;$workspace.Margin=New-Object Windows.Forms.Padding(0);$workspace.Dock='Fill';$workspace.AllowDrop=$true
+foreach($c in @($open,$cancel,$copy,$reference,$fileText,$drop,$bar,$chartBox,$workspaceSplit,$status)){$form.Controls.Remove($c);$workspace.Controls.Add($c)}
+$open.SetBounds(20,12,122,32);$cancel.SetBounds(150,12,80,32);$copy.SetBounds(238,12,72,32);$reference.SetBounds(318,12,104,32);$fileText.SetBounds(434,19,564,24)
+$drop.SetBounds(20,54,978,72);$bar.SetBounds(20,135,978,8);$chartBox.SetBounds(20,152,978,142);$workspaceSplit.SetBounds(20,302,978,472);$status.SetBounds(20,782,978,22)
+$workspaceSplit.Height=472
+$workspaceHost=New-Object Windows.Forms.Integration.WindowsFormsHost;$workspaceHost.Child=$workspace
+
+[xml]$shellXaml=@'
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Little Stream Detector (LSD) 3.0" Width="1280" Height="915"
+        MinWidth="760" MinHeight="560" WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="CanResize" Background="#080B12"
+        SnapsToDevicePixels="True" UseLayoutRounding="True">
+  <Window.Resources>
+    <Style x:Key="ChromeButton" TargetType="Button">
+      <Setter Property="Width" Value="42"/><Setter Property="Height" Value="32"/>
+      <Setter Property="Foreground" Value="#C8D3E8"/><Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Segoe MDL2 Assets"/><Setter Property="FontSize" Value="12"/><Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="Bd" Background="{TemplateBinding Background}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="#283247"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
+    </Style>
+  </Window.Resources>
+  <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="105"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+    <Border Grid.Row="0" BorderBrush="#374158" BorderThickness="1,1,1,1">
+      <Grid x:Name="HeaderDrag">
+        <Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,0"><GradientStop Color="#0A0C12" Offset="0"/><GradientStop Color="#141822" Offset="0.52"/><GradientStop Color="#101725" Offset="1"/></LinearGradientBrush></Grid.Background>
+        <Canvas IsHitTestVisible="False" ClipToBounds="True">
+          <Rectangle Width="5" Height="105" Fill="#D6AE4A" Opacity=".82" Canvas.Left="0" Canvas.Top="0"/>
+          <Rectangle Height="1" Fill="#2A5CBE" Opacity=".70" Canvas.Left="0" Canvas.Top="104" Canvas.Right="0"/>
+          <Path Stroke="#374158" StrokeThickness="1" Opacity=".48" Data="M 0,80 C 180,25 350,100 560,42 S 850,5 1120,58"/>
+          <Path Stroke="#2A5CBE" StrokeThickness="1.6" Opacity=".62" Data="M 150,75 C 350,10 510,100 720,42 S 900,25 1010,58"/>
+          <Path Stroke="#4A84F2" StrokeThickness="1.8" Opacity=".76" Data="M 300,67 C 430,28 535,78 650,55 C 735,38 805,17 885,19 C 935,20 975,38 1010,48"/>
+          <Ellipse Width="5" Height="5" Fill="#D6AE4A" Canvas.Left="515" Canvas.Top="30"/><Ellipse Width="3" Height="3" Fill="#4A84F2" Canvas.Left="682" Canvas.Top="40"/>
+        </Canvas>
+        <StackPanel Margin="24,19,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+          <StackPanel Orientation="Horizontal"><TextBlock Text="LITTLE STREAM DETECTOR (LSD)" Foreground="#E8EDF7" FontFamily="Segoe UI Semibold" FontSize="21"/><TextBlock Text=" 3.0" Foreground="#4A84F2" FontFamily="Segoe UI Semibold" FontSize="21"/></StackPanel>
+          <TextBlock Text="N A T I V E   B I T S T R E A M   A N A L Y Z E R" Foreground="#99A5BC" FontSize="10" Margin="1,7,0,0"/>
+        </StackPanel>
+        <StackPanel Margin="0,23,105,0" VerticalAlignment="Top" HorizontalAlignment="Right">
+          <TextBlock Text="eco-by-different" Foreground="#E8EDF7" FontFamily="Segoe UI Semibold" FontSize="31" HorizontalAlignment="Center"/>
+          <TextBlock Text="D I F F E R E N T   S T R E A M S .   A   G R E E N E R   T O M O R R O W ." Foreground="#6F7B94" FontSize="8" HorizontalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+          <Button x:Name="MinButton" Content="&#xE921;" Style="{StaticResource ChromeButton}"/>
+          <Button x:Name="MaxButton" Content="&#xE922;" Style="{StaticResource ChromeButton}"/>
+          <Button x:Name="CloseButton" Content="&#xE8BB;" Style="{StaticResource ChromeButton}"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Border x:Name="WorkspaceSlot" Grid.Row="1" Background="#080B12"/>
+  </Grid>
+</Window>
+'@
+$reader=New-Object Xml.XmlNodeReader $shellXaml
+$wpfWindow=[Windows.Markup.XamlReader]::Load($reader)
+$workspaceSlot=$wpfWindow.FindName('WorkspaceSlot');$workspaceSlot.Child=$workspaceHost
+$headerDrag=$wpfWindow.FindName('HeaderDrag');$minButton=$wpfWindow.FindName('MinButton');$maxButton=$wpfWindow.FindName('MaxButton');$closeButton=$wpfWindow.FindName('CloseButton')
+$minButton.Add_Click({$wpfWindow.WindowState='Minimized'});$maxButton.Add_Click({$wpfWindow.WindowState=if($wpfWindow.WindowState-eq'Maximized'){'Normal'}else{'Maximized'}});$closeButton.Add_Click({$wpfWindow.Close()})
+$closeButton.Add_MouseEnter({$closeButton.Background=New-Object Windows.Media.SolidColorBrush([Windows.Media.Color]::FromRgb(196,43,55))});$closeButton.Add_MouseLeave({$closeButton.Background=[Windows.Media.Brushes]::Transparent})
+$headerDrag.Add_MouseLeftButtonDown({if($_.ClickCount-eq2){$wpfWindow.WindowState=if($wpfWindow.WindowState-eq'Maximized'){'Normal'}else{'Maximized'}}else{$wpfWindow.DragMove()}})
+$wpfWindow.Add_PreviewKeyDown({if($_.Key-eq'Escape'){Cancel};if(($_.KeyboardDevice.Modifiers -band [Windows.Input.ModifierKeys]::Control) -and $_.Key -eq 'O'){Pick}})
+# The shell is already 105 px header + 810 px workspace; avoid a second post-render resize.
+$wpfWindow.Add_ContentRendered({[LSDConsole]::Hide()})
+$script:ShellCleanupDone=$false;$wpfWindow.Add_Closing({if(-not $script:ShellCleanupDone){$script:ShellCleanupDone=$true;& $cleanup};if(-not $form.IsDisposed){$form.Dispose()}})
+try{[void]$wpfWindow.ShowDialog()}catch{[Windows.Forms.MessageBox]::Show(($_|Out-String),'LSD 3.0 - WPF shell error','OK','Error')|Out-Null;throw}
