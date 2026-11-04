@@ -2162,7 +2162,7 @@ if($key-eq[Windows.Forms.Keys]::Left){if($script:ActivePreview-eq'A'){Set-Previe
 if($key-eq[Windows.Forms.Keys]::Right){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex+1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex+1)};$_.Handled=$true;$_.SuppressKeyPress=$true;return}
 if($key-eq[Windows.Forms.Keys]::Space){Toggle-ActivePreviewPlayback;$_.Handled=$true;$_.SuppressKeyPress=$true;return}
 }
-if($key-eq[Windows.Forms.Keys]::Escape){Cancel;$_.Handled=$true;$_.SuppressKeyPress=$true}elseif($_.Control-and$key-eq[Windows.Forms.Keys]::O){Pick;$_.Handled=$true;$_.SuppressKeyPress=$true}
+if($key-eq[Windows.Forms.Keys]::Escape){if($wpfWindow-and$wpfWindow.WindowState-eq'Maximized'){$wpfWindow.WindowState='Normal'};$_.Handled=$true;$_.SuppressKeyPress=$true}elseif($_.Control-and$key-eq[Windows.Forms.Keys]::O){Pick;$_.Handled=$true;$_.SuppressKeyPress=$true}
 }
 function Register-WorkspaceKeyHandler([Windows.Forms.Control]$root){
 $root.Add_KeyDown($previewWinFormsKeyDown)
@@ -2241,7 +2241,7 @@ if($key-eq[Windows.Input.Key]::Left){if($script:ActivePreview-eq'A'){Set-Preview
 if($key-eq[Windows.Input.Key]::Right){if($script:ActivePreview-eq'A'){Set-PreviewAxis $previewA 'A' ($script:PreviewAIndex+1)}else{Set-PreviewAxis $previewB 'B' ($script:PreviewBIndex+1)};$_.Handled=$true;return}
 if($key-eq[Windows.Input.Key]::Space){Toggle-ActivePreviewPlayback;$_.Handled=$true;return}
 }
-if($key-eq[Windows.Input.Key]::Escape){Cancel;$_.Handled=$true}elseif($ctrl-and$key-eq[Windows.Input.Key]::O){Pick;$_.Handled=$true}
+if($key-eq[Windows.Input.Key]::Escape){if($wpfWindow.WindowState-eq'Maximized'){$wpfWindow.WindowState='Normal'};$_.Handled=$true}elseif($ctrl-and$key-eq[Windows.Input.Key]::O){Pick;$_.Handled=$true}
 })
 # The shell is already 105 px header + 810 px workspace; avoid a second post-render resize.
 $wpfWindow.Add_ContentRendered({[LSDConsole]::Hide()})
